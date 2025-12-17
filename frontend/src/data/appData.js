@@ -1,0 +1,1 @@
+// Đã chuyển sang fetch API, file này không còn sử dụng.
