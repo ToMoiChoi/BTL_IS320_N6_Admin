@@ -13,14 +13,14 @@ const Footer = () => {
             <p className="mb-4 text-gray-600">Khiếu nại: <span className="font-semibold text-red-600">1800.1744</span> (8h00 - 21h30)</p>
 
             <h3 className="font-bold mb-3 text-gray-800">Phương thức thanh toán</h3>
-            <div className="flex flex-wrap gap-2">
+            {/* <div className="flex flex-wrap gap-2">
               <img src="https://via.placeholder.com/30x20.png?text=VNPay" alt="VNPay" className="h-5 w-auto" />
               <img src="https://via.placeholder.com/30x20.png?text=Moca" alt="Moca" className="h-5 w-auto" />
               <img src="https://via.placeholder.com/30x20.png?text=Visa" alt="Visa" className="h-5 w-auto" />
               <img src="https://via.placeholder.com/30x20.png?text=Master" alt="MasterCard" className="h-5 w-auto" />
               <img src="https://via.placeholder.com/30x20.png?text=JCB" alt="JCB" className="h-5 w-auto" />
               <img src="https://via.placeholder.com/30x20.png?text=Payoo" alt="Payoo" className="h-5 w-auto" />
-            </div>
+            </div> */}
           </div>
 
           {/* Cột 2: Thông tin và chính sách */}

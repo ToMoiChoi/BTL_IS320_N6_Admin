@@ -201,3 +201,32 @@ async def upload_image(product_id: int, file: UploadFile = File(...), db: Sessio
     db.refresh(media)
     
     return {"filename": filename, "path": relative_path}
+
+# 8. GET PRODUCT MEDIA (Lấy danh sách hình ảnh/video)
+@router.get("/{product_id}/media", response_model=List[schemas.MediaOut]) # Giả sử bạn có MediaOut trong schemas
+def get_product_media(product_id: int, db: Session = Depends(get_db)):
+    # 1. Kiểm tra sản phẩm tồn tại
+    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # 2. Lấy danh sách media từ bảng hinhanhvideo
+    media_list = db.query(models.HinhAnhVideo).filter(models.HinhAnhVideo.MaSP == product_id).all()
+    
+    return media_list
+
+# 9. DELETE MEDIA (Xóa một ảnh cụ thể)
+@router.delete("/media/{media_id}")
+def delete_media(media_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    media_item = db.query(models.HinhAnhVideo).filter(models.HinhAnhVideo.MaMedia == media_id).first()
+    if not media_item:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    # Tùy chọn: Xóa file vật lý trong thư mục uploads
+    # file_path = media_item.DuongDanFile.replace("/static/", UPLOAD_DIR + "/")
+    # if os.path.exists(file_path):
+    #     os.remove(file_path)
+
+    db.delete(media_item)
+    db.commit()
+    return {"detail": "Deleted media item"}

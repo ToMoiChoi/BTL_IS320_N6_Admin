@@ -1,142 +1,192 @@
-import React, { useEffect } from 'react';
-import { Link, useHistory } from 'react-router-dom'; // Sử dụng v5 (useHistory)
-import Header from './Header';
-import Footer from './Footer';
+import React, { useEffect, useState } from "react";
+import { Link, useHistory } from "react-router-dom";
+import Header from "./Header";
+import Footer from "./Footer";
 
-// Component trang tài khoản
-const Account = ({ isLoggedIn, userInfo, onLogout }) => {
-    const history = useHistory();
+const Account = ({ isLoggedIn, onLogout }) => {
+  const history = useHistory();
+  const [userMe, setUserMe] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    // Lấy thông tin người dùng từ props
-    const userName = userInfo?.name || 'Người dùng';
-    const userEmail = userInfo?.email || 'Chưa cập nhật email';
-    const userPhone = userInfo?.phone || 'Chưa cập nhật SĐT';
+  useEffect(() => {
+    const fetchUserMe = async () => {
+      const token = localStorage.getItem("token");
 
-    // 1. Bảo vệ Route: Nếu chưa đăng nhập, chuyển hướng về trang login
-    useEffect(() => {
-        if (!isLoggedIn) {
-            history.push('/login');
+      if (!token) {
+        history.push("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/users/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`, // Gửi JWT chuẩn xác thực
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserMe(data);
+        } else {
+          // Xóa token nếu không hợp lệ hoặc hết hạn
+          localStorage.removeItem("token");
+          history.push("/login");
         }
-    }, [isLoggedIn, history]);
-
-    // Xử lý đăng xuất từ trang này
-    const handleLogout = () => {
-        if (onLogout) {
-            onLogout();
-        }
-        history.push('/'); // Chuyển về trang chủ sau khi đăng xuất
+      } catch (error) {
+        console.error("Lỗi khi kết nối Backend:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Khi đang chuyển hướng (chưa đăng nhập), không hiển thị gì
-    if (!isLoggedIn) {
-        return null;
-    }
+    fetchUserMe();
+  }, [history]);
 
+  const handleLogout = () => {
+    if (onLogout) onLogout();
+    history.push("/");
+  };
+
+  if (loading) {
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
-            {/* Header chung */}
-            <Header isLoggedIn={isLoggedIn} userInfo={userInfo} onLogout={onLogout} />
-
-            <main className="flex-grow container mx-auto px-4 py-8 lg:py-12">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8">Tài khoản của bạn</h1>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
-                    {/* Cột 1: Menu điều hướng (Sidebar) */}
-                    <aside className="md:col-span-1">
-                        <div className="bg-white p-4 rounded-lg shadow">
-                            <nav className="flex flex-col space-y-2">
-                                {/* Link "Thông tin tài khoản" (đang active) */}
-                                <Link
-                                    to="/account"
-                                    className="px-4 py-3 bg-red-50 text-red-600 font-bold rounded-md"
-                                >
-                                    Thông tin tài khoản
-                                </Link>
-                                {/* Link "Đơn hàng" (ví dụ) */}
-                                <Link
-                                    to="/orders" // Giả sử bạn sẽ tạo route /orders
-                                    className="px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-md"
-                                >
-                                    Đơn hàng của tôi
-                                </Link>
-                                {/* Nút Đăng xuất */}
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 rounded-md font-medium"
-                                >
-                                    Đăng xuất
-                                </button>
-                            </nav>
-                        </div>
-                    </aside>
-
-                    {/* Cột 2: Nội dung chính (Thông tin) */}
-                    <section className="md:col-span-3">
-                        <div className="bg-white p-6 lg:p-8 rounded-lg shadow">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-6">Thông tin chung</h2>
-
-                            <form>
-                                <div className="space-y-4">
-                                    {/* Tên hiển thị */}
-                                    <div>
-                                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Tên hiển thị
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="name"
-                                            value={userName}
-                                            readOnly
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                                        />
-                                    </div>
-
-                                    {/* Email */}
-                                    <div>
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Email
-                                        </label>
-                                        <input
-                                            type="email"
-                                            id="email"
-                                            value={userEmail}
-                                            readOnly
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                                        />
-                                    </div>
-
-                                    {/* Số điện thoại */}
-                                    <div>
-                                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Số điện thoại
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            id="phone"
-                                            value={userPhone}
-                                            readOnly
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                                        />
-                                    </div>
-
-                                    <div className="pt-4">
-                                        <button
-                                            type="button"
-                                            className="px-6 py-2 bg-gray-300 text-gray-600 font-medium rounded-lg cursor-not-allowed"
-                                        >
-                                            Chỉnh sửa thông tin
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-                </div>
-            </main>
-            <Footer />
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      </div>
     );
+  }
+
+  if (!userMe) return null;
+
+  // Map dữ liệu từ Model TaiKhoan (Backend)
+  const userName = userMe.TenDangNhap || userMe.username || "Người dùng";
+  const userEmail = userMe.Email || userMe.email || "Chưa cập nhật email";
+  const isAdmin = userMe.MaPQ === 1; // Kiểm tra quyền từ model TaiKhoan
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <main className="flex-grow container mx-auto px-4 py-8 lg:py-12">
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+          Hồ sơ khách hàng
+        </h1>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <aside className="md:col-span-1">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <nav className="flex flex-col space-y-1">
+                <Link
+                  to="/account"
+                  className="px-4 py-3 bg-red-50 text-red-600 font-bold rounded-lg transition"
+                >
+                  👤 Thông tin tài khoản
+                </Link>
+                <Link
+                  to="/orders"
+                  className="px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition"
+                >
+                  📦 Đơn hàng của tôi
+                </Link>
+
+                {/* HIỂN THỊ MENU QUẢN TRỊ NẾU LÀ ADMIN (MaPQ == 1) */}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="px-4 py-3 text-blue-600 hover:bg-blue-50 rounded-lg font-bold border-t border-gray-100 mt-2"
+                  >
+                    🛡️ Quản trị hệ thống
+                  </Link>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg transition mt-4"
+                >
+                  🚪 Đăng xuất
+                </button>
+              </nav>
+            </div>
+          </aside>
+
+          {/* Nội dung chính */}
+          <section className="md:col-span-3">
+            <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Thông tin cá nhân
+                </h2>
+                <span
+                  className={`px-4 py-1 rounded-full text-xs font-bold uppercase ${
+                    isAdmin
+                      ? "bg-purple-100 text-purple-700 border border-purple-200"
+                      : "bg-blue-100 text-blue-700 border border-blue-200"
+                  }`}
+                >
+                  {isAdmin ? "Quản trị viên" : "Khách hàng Member"}
+                </span>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider">
+                    Tên đăng nhập
+                  </label>
+                  <p className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-medium shadow-inner">
+                    {userName}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider">
+                    Địa chỉ Email đăng ký
+                  </label>
+                  <p className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-medium shadow-inner">
+                    {userEmail}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider">
+                    Ngày tham gia hệ thống
+                  </label>
+                  <p className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-medium shadow-inner italic">
+                    {userMe.CreatedAt
+                      ? new Date(userMe.CreatedAt).toLocaleDateString("vi-VN")
+                      : "Đang cập nhật..."}
+                  </p>
+                </div>
+
+                <div className="pt-6 border-t border-gray-50 flex gap-4">
+                  <button className="px-6 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition shadow-lg shadow-red-200">
+                    Cập nhật hồ sơ
+                  </button>
+                  <button className="px-6 py-2 border border-gray-300 text-gray-600 font-bold rounded-lg hover:bg-gray-50 transition">
+                    Đổi mật khẩu
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Hiển thị thêm thông tin từ bảng ThongTinCaNhan nếu có */}
+            {userMe.thongtin && (
+              <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-800 mb-4">
+                  📍 Địa chỉ nhận hàng mặc định
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {userMe.thongtin.DiaChi || "Chưa thiết lập địa chỉ"}
+                </p>
+                <p className="text-gray-600 text-sm mt-1">
+                  SĐT: {userMe.thongtin.SoDienThoai || "Chưa cập nhật"}
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 };
 
 export default Account;

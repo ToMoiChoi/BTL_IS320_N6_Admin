@@ -61,6 +61,15 @@ class ProductOut(ProductBase):
     class Config:
         from_attributes = True
 
+# --- MEDIA (HÌNH ẢNH, VIDEO) ---
+class MediaOut(BaseModel):
+    MaMedia: int
+    MaSP: int
+    Loai: str
+    DuongDanFile: str
+
+    class Config:
+        orm_mode = True
 # --- ORDER (ĐƠN HÀNG) ---
 class OrderItemCreate(BaseModel):
     MaSP: int
@@ -98,3 +107,4 @@ class OrderOut(BaseModel):
 class RevenueByDay(BaseModel):
     date: datetime
     revenue: condecimal(max_digits=14, decimal_places=2)
+

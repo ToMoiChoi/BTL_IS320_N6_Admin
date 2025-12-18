@@ -1,181 +1,150 @@
-import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useState } from "react";
+import { useHistory, Link } from "react-router-dom";
 
-const Login = ({ onLoginSuccess, onBack }) => {
-    const history = useHistory();
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
-    const [rememberMe, setRememberMe] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+const Login = ({ onLoginSuccess }) => {
+  const history = useHistory();
+  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prevState => ({
-            ...prevState,
-            [name]: value
-        }));
-    };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError(""); // Xóa lỗi khi người dùng bắt đầu nhập lại
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const response = await fetch('http://localhost:8000/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: formData.email,
-                    password: formData.password
-                })
-            });
-            if (!response.ok) {
-                throw new Error('Đăng nhập thất bại');
-            }
-            const data = await response.json();
-            // data nên chứa thông tin user và token
-            if (onLoginSuccess) {
-                onLoginSuccess(data.user || data);
-            }
-            // Lưu token nếu có
-            if (data.access_token) {
-                localStorage.setItem('access_token', data.access_token);
-            }
-            setIsLoading(false);
-            history.push('/');
-        } catch (error) {
-            setIsLoading(false);
-            alert(error.message || 'Đăng nhập thất bại');
-        }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-8">
-                {/* Back Button */}
-                <button
-                    onClick={() => history.push('/')}
-                    className="flex items-center text-gray-600 hover:text-gray-800 transition duration-200 mb-4"
-                >
-                    <span className="mr-2">←</span>
-                    Quay lại trang chủ
-                </button>
+    try {
+      // Dữ liệu dạng Form Data cho OAuth2PasswordRequestForm
+      const params = new URLSearchParams();
+      params.append("username", formData.username);
+      params.append("password", formData.password);
 
-                {/* Header */}
-                <div className="text-center">
-                    <div className="flex justify-center items-center mb-6">
-                        <div className="text-3xl font-bold text-red-600">Cellphone S</div>
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900">Đăng nhập</h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Chào mừng bạn trở lại!
-                    </p>
-                </div>
+      const response = await fetch("http://localhost:8000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      });
 
-                {/* Login Form */}
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="space-y-4">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                Email hoặc số điện thoại
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="text"
-                                    required
-                                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200"
-                                    placeholder="Nhập email hoặc số điện thoại"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <span className="text-gray-400">📧</span>
-                                </div>
-                            </div>
-                        </div>
+      const data = await response.json();
 
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                Mật khẩu
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200"
-                                    placeholder="Nhập mật khẩu"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <span className="text-gray-400">🔒</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+      if (!response.ok) {
+        // Xử lý lỗi từ FastAPI (thường nằm trong data.detail)
+        const errorMsg =
+          typeof data.detail === "string"
+            ? data.detail
+            : "Tên đăng nhập hoặc mật khẩu không đúng";
+        throw new Error(errorMsg);
+      }
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <input
-                                id="remember-me"
-                                name="remember-me"
-                                type="checkbox"
-                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                            />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                                Ghi nhớ đăng nhập
-                            </label>
-                        </div>
+      // Lưu Token vào localStorage
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+      }
 
-                        <button
-                            type="button"
-                            className="text-sm font-medium text-red-600 hover:text-red-500 transition duration-200"
-                        >
-                            Quên mật khẩu?
-                        </button>
-                    </div>
+      if (onLoginSuccess) onLoginSuccess(data);
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                    Đang đăng nhập...
-                                </div>
-                            ) : (
-                                'Đăng nhập'
-                            )}
-                        </button>
-                    </div>
+      history.push("/");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-                    <div className="text-center">
-                        <span className="text-sm text-gray-600">
-                            Chưa có tài khoản?{' '}
-                            <button
-                                type="button"
-                                className="font-medium text-red-600 hover:text-red-500 transition duration-200"
-                            >
-                                Đăng ký ngay
-                            </button>
-                        </span>
-                    </div>
-                </form>
-            </div>
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-extrabold text-red-600 tracking-tighter italic">
+            Cellphone<span className="text-gray-900">S</span>
+          </h2>
+          <p className="text-gray-500 mt-3 font-medium text-lg">
+            Chào mừng bạn trở lại!
+          </p>
         </div>
-    );
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-md animate-pulse">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 px-1">
+              Tên đăng nhập
+            </label>
+            <input
+              name="username"
+              type="text"
+              className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-100 focus:border-red-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
+              placeholder="Nhập tên đăng nhập"
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 px-1">
+              Mật khẩu
+            </label>
+            <input
+              name="password"
+              type="password"
+              className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-100 focus:border-red-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
+              placeholder="••••••••"
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm px-1">
+            <label className="flex items-center text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+              />
+              Ghi nhớ đăng nhập
+            </label>
+            <Link
+              to="/forgot-password"
+              size="small"
+              className="text-red-600 font-bold hover:underline"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-red-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-red-700 shadow-xl shadow-red-200 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest"
+          >
+            {isLoading ? "Đang xác thực..." : "Đăng nhập"}
+          </button>
+        </form>
+
+        <div className="mt-10 pt-6 border-t border-gray-100 text-center">
+          <p className="text-gray-600 font-medium">
+            Bạn là khách hàng mới?{" "}
+            <Link
+              to="/register"
+              className="text-red-600 font-extrabold hover:underline transition-all"
+            >
+              Đăng ký ngay
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Login;
