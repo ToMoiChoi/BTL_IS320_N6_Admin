@@ -14,12 +14,40 @@ class UserCreate(BaseModel):
     password: str
     maPQ: int = 2
 
+class ThongTinCaNhanOut(BaseModel):
+    HoTen: Optional[str] = None
+    SoDienThoai: Optional[str] = None
+    DiaChi: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class UserOut(BaseModel):
     MaTK: int
     TenDangNhap: str
     Email: EmailStr
+    MaPQ: int
+    CreatedAt: datetime
+    thongtin: Optional[ThongTinCaNhanOut] = None 
+
     class Config:
         from_attributes = True
+
+class PasswordUpdate(BaseModel):
+    old_password: str
+    new_password: str
+
+class AdminPasswordReset(BaseModel):
+    new_password: str
+
+class UserUpdate(BaseModel):
+    HoTen: Optional[str] = None
+    SoDienThoai: Optional[str] = None
+    DiaChi: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+    
 # --- THONG SO KY THUAT (SPECS / VARIANTS) ---
 class ThongSoKyThuatBase(BaseModel):
     KichThuoc: Optional[str] = None
@@ -54,12 +82,6 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
-class ProductOut(ProductBase):
-    MaSP: int
-    NgayTao: Optional[datetime] = None
-    # thong_so: List[ThongSoKyThuatOut] = [] 
-    class Config:
-        from_attributes = True
 
 # --- MEDIA (HÌNH ẢNH, VIDEO) ---
 class MediaOut(BaseModel):
@@ -69,7 +91,45 @@ class MediaOut(BaseModel):
     DuongDanFile: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class ProductOut(ProductBase):
+    MaSP: int
+    NgayTao: Optional[datetime] = None
+    thongso_list: List[ThongSoKyThuatOut] = [] 
+    media: List[MediaOut] = []
+
+    class Config:
+        from_attributes = True
+# --- CART SCHEMAS ---
+
+class CartItemCreate(BaseModel):
+    MaSP: int
+    MaTSKT: Optional[int] = None  # Cấu hình máy (RAM/ROM) cụ thể
+    SoLuongSanPham: int = 1
+
+class CartItemUpdate(BaseModel):
+    SoLuongSanPham: int
+
+class CartItemOut(BaseModel):
+    MaCTGH: int
+    MaSP: int
+    MaTSKT: Optional[int]
+    SoLuongSanPham: int
+    # Bạn có thể thêm thông tin sản phẩm để Frontend hiển thị dễ hơn
+    sanpham: Optional[ProductOut] 
+    
+    class Config:
+        from_attributes = True
+
+class CartOut(BaseModel):
+    MAGH: int
+    MaTK: int
+    CreatedAt: datetime
+    items: List[CartItemOut] = []
+
+    class Config:
+        from_attributes = True
 # --- ORDER (ĐƠN HÀNG) ---
 class OrderItemCreate(BaseModel):
     MaSP: int
@@ -102,7 +162,11 @@ class OrderOut(BaseModel):
 
     class Config:
         from_attributes = True
+class OrderStatusUpdate(BaseModel):
+    TrangThaiDH: str # Ví dụ: "completed", "shipping", v.v.
 
+    class Config:
+        from_attributes = True
 # --- STATS ---
 class RevenueByDay(BaseModel):
     date: datetime

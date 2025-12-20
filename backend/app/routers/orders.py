@@ -119,3 +119,38 @@ def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem đơn hàng này")
         
     return order
+
+# 4. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (Chỉ dành cho Admin)
+@router.patch("/{order_id}/status", response_model=schemas.OrderOut)
+def update_order_status(
+    order_id: int, 
+    payload: schemas.OrderStatusUpdate, # Schema mới để nhận trạng thái
+    db: Session = Depends(get_db), 
+    user=Depends(get_current_user)
+):
+    # --- BƯỚC 1: Kiểm tra quyền hạn ---
+    # Chỉ Admin (MaPQ = 1) mới có quyền thay đổi trạng thái đơn hàng
+    if getattr(user, "MaPQ", 2) != 1:
+        raise HTTPException(
+            status_code=403, 
+            detail="Bạn không có quyền cập nhật trạng thái đơn hàng này"
+        )
+
+    # --- BƯỚC 2: Tìm đơn hàng trong DB ---
+    order = db.query(models.DonHang).filter(models.DonHang.MaDH == order_id).first()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Đơn hàng không tồn tại")
+
+    # --- BƯỚC 3: Cập nhật và Lưu ---
+    # Bạn có thể thêm logic kiểm tra các trạng thái hợp lệ (ví dụ: pending, shipping, completed, cancelled)
+    valid_statuses = ["pending", "processing", "shipping", "completed", "cancelled"]
+    if payload.TrangThaiDH not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Trạng thái '{payload.TrangThaiDH}' không hợp lệ")
+
+    order.TrangThaiDH = payload.TrangThaiDH
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order

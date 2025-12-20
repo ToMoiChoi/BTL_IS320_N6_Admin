@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .database import engine, Base
 from app.models import models  # ensure models imported for metadata
-from app.routers import auth, products, users, orders, stats
+from app.routers import auth, products, users, orders, stats, cart
 from app.middlewares.request_logger import RequestLoggerMiddleware
 import os
 
@@ -34,6 +34,7 @@ app.add_middleware(RequestLoggerMiddleware)
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(users.router)
+app.include_router(cart.router)
 app.include_router(orders.router)
 app.include_router(stats.router)
 app.mount("/static", StaticFiles(directory="uploads"), name="static")

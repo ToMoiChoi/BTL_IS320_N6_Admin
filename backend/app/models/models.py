@@ -78,7 +78,6 @@ class ThongTinCaNhan(Base):
     __tablename__ = "thongtincanhan"
     MaKH = Column(Integer, primary_key=True)
     HoTen = Column(String(255))
-    Email = Column(String(255))
     SoDienThoai = Column(String(50))
     DiaChi = Column(Text)
     NgayTao = Column(DateTime(timezone=True), server_default=func.now())
