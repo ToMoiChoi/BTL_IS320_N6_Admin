@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState } from "react";
 import Footer from "./Footer";
 import Card from "./Card";
 import Header from "./Header";
+import { useHistory } from "react-router-dom";
 
 const Home = ({
   selectedSort,
@@ -85,30 +86,21 @@ const Home = ({
       </div>
     );
 
+  const history = useHistory();
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Thêm Header vào Home */}
       <div className="container mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold mb-6 italic text-red-600">
-          cellphone<span className="text-gray-800 not-italic">S</span> - iPhone
+          cellphone<span className="text-gray-800 not-italic">S</span>
         </h1>
 
-        {/* Categories */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          {seriesCategories.map((category, index) => (
-            <button
-              key={`cat-${index}`}
-              className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm font-semibold shadow-sm"
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        {/* Categories cứng đã bị xóa theo yêu cầu */}
 
         {/* Khu vực Sắp xếp */}
         <div className="bg-white p-4 rounded-2xl shadow-sm mb-8 border border-gray-100">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h2 className="text-lg font-bold text-gray-700">Sắp xếp theo</h2>
+            <h2 className="text-lg font-bold text-gray-700">Các sản phẩm hot</h2>
             <div className="flex gap-2 flex-wrap">
               {sortOptions.map((option, index) => (
                 <button
@@ -150,7 +142,7 @@ const Home = ({
         </span>
       </button>
 
-      <Footer />
+      <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
 };

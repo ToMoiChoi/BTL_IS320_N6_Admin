@@ -11,19 +11,43 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
   // 2. Tên hiển thị ưu tiên TenDangNhap từ Model TaiKhoan
   const displayName = userInfo?.TenDangNhap || userInfo?.username || "User";
 
-  // Dropdown danh mục
-  const [categories, setCategories] = useState([]);
+  // Dropdown danh mục cứng
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch(() => setCategories([]));
-  }, []);
+  // Tìm kiếm sản phẩm
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeout = useRef();
 
-  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    if (!searchText) {
+      setSearchResults([]);
+      setShowSuggestions(false);
+      return;
+    }
+    // Debounce fetch
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/products");
+        const data = await res.json();
+        // Lọc sản phẩm theo tên gần đúng (không phân biệt hoa thường, có dấu)
+        const filtered = data.filter((p) =>
+          p.TenSP?.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").includes(
+            searchText.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
+          )
+        );
+        setSearchResults(filtered.slice(0, 6)); // Hiện tối đa 6 gợi ý
+        setShowSuggestions(true);
+      } catch {
+        setSearchResults([]);
+        setShowSuggestions(false);
+      }
+    }, 250);
+    return () => clearTimeout(searchTimeout.current);
+  }, [searchText]);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -60,23 +84,24 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
             >
               <span className="text-sm font-medium">☰ Danh mục</span>
             </button>
-            {/* Dropdown danh mục */}
+            {/* Dropdown danh mục cứng */}
             {showDropdown && (
               <div className="absolute left-0 top-full mt-2 w-56 bg-white text-gray-800 rounded-xl shadow-xl z-50 border border-gray-100 animate-in fade-in slide-in-from-top-2">
                 <div className="py-2">
-                  {categories.length === 0 && (
-                    <div className="px-4 py-2 text-sm text-gray-400">Không có danh mục</div>
-                  )}
-                  {categories.map((cat) => (
-                    <Link
-                      key={cat.MaDM}
-                      to={`/category/${cat.MaDM}`}
-                      className="block px-4 py-2 text-sm hover:bg-red-50 rounded-lg transition"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      {cat.TenDM}
-                    </Link>
-                  ))}
+                  <Link
+                    to="/category/0"
+                    className="block px-4 py-2 text-sm hover:bg-red-50 rounded-lg transition"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    iPhone
+                  </Link>
+                  <Link
+                    to="/category/1"
+                    className="block px-4 py-2 text-sm hover:bg-blue-50 rounded-lg transition"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    SamSung
+                  </Link>
                 </div>
               </div>
             )}
@@ -92,7 +117,42 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
                 type="text"
                 placeholder="Bạn muốn mua gì hôm nay?"
                 className="w-full pl-12 pr-4 py-2.5 rounded-xl text-gray-800 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all border-none shadow-inner"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && searchText) {
+                    history.push(`/search?q=${encodeURIComponent(searchText)}`);
+                    setShowSuggestions(false);
+                  }
+                }}
               />
+              {/* Gợi ý sản phẩm */}
+              {showSuggestions && searchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full bg-white text-gray-800 rounded-xl shadow-xl z-50 border border-gray-100 mt-2 animate-in fade-in slide-in-from-top-2">
+                  {searchResults.map((item) => (
+                    <div
+                      key={item.MaSP}
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 cursor-pointer rounded-lg transition"
+                      onMouseDown={() => {
+                        history.push(`/products/${item.MaSP}`);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <img
+                        src={item.media && item.media.length > 0 ? `http://127.0.0.1:8000${item.media[0].DuongDanFile}` : "https://via.placeholder.com/40x40?text=No+Image"}
+                        alt={item.TenSP}
+                        className="w-10 h-10 object-contain rounded-lg border"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm truncate">{item.TenSP}</div>
+                        <div className="text-xs text-gray-500">{Number(item.GiaBan).toLocaleString("vi-VN")}₫</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

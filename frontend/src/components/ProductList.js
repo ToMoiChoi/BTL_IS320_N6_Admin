@@ -45,4 +45,3 @@ const ProductList = () => {
 };
 
 export default ProductList;
-z

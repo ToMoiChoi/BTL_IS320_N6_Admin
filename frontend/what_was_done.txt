@@ -1,0 +1,38 @@
+Tổng hợp các thay đổi và cập nhật đã thực hiện trong dự án (tính đến 21/12/2025):
+
+1. Trang chủ (Home.js):
+   - Xóa 2 nút danh mục (iPhone, SamSung) ngay dưới logo.
+   - Đổi tiêu đề "Sắp xếp theo" thành "Các sản phẩm hot".
+   - Đảm bảo giao diện sạch sẽ, đồng nhất.
+
+2. Trang tìm kiếm sản phẩm (SearchResults.js):
+   - Thay tiêu đề cũ bằng breadcrumb (điều hướng phân cấp) đúng chuẩn UI/UX.
+   - Loại bỏ chữ "home" và biểu tượng, chỉ còn "Trang chủ" trong breadcrumb.
+   - Thêm thanh "Sắp xếp theo" với 2 lựa chọn: Giá tăng dần, Giá giảm dần.
+   - Sản phẩm có giá "Liên hệ" luôn được xếp cuối danh sách, bất kể sắp xếp tăng/giảm.
+   - Khi tìm kiếm, sản phẩm hiển thị đầy đủ thông tin (RAM, Bộ nhớ, Giá, Hình ảnh) như trang chi tiết.
+
+3. Breadcrumb (Breadcrumb.js):
+   - Tạo mới file Breadcrumb.js để hiển thị điều hướng phân cấp.
+   - Loại bỏ biểu tượng và chữ "home", chỉ còn "Trang chủ".
+
+4. Thanh sắp xếp (SortBar.js):
+   - Tạo mới file SortBar.js để tái sử dụng cho các trang cần sắp xếp.
+   - Giao diện nút sắp xếp nổi bật, dễ thao tác.
+
+5. Logic và dữ liệu:
+   - Sửa logic fetch và merge dữ liệu ở SearchResults để đảm bảo hiển thị đúng thông tin sản phẩm (RAM, Bộ nhớ, Giá, Hình ảnh).
+   - Sắp xếp sản phẩm theo giá, ưu tiên sản phẩm có giá, sản phẩm "Liên hệ" luôn ở cuối.
+
+6. UI/UX:
+   - Đảm bảo đồng nhất trải nghiệm người dùng giữa trang chủ, trang tìm kiếm và chi tiết sản phẩm.
+   - Breadcrumb, sort bar, và danh sách sản phẩm đều được tối ưu cho trải nghiệm tốt nhất.
+
+7. Các file đã tạo/sửa chính:
+   - frontend/src/components/Home.js
+   - frontend/src/components/SearchResults.js
+   - frontend/src/components/Breadcrumb.js
+   - frontend/src/components/SortBar.js
+   - frontend/src/components/Card.js (hiển thị thông tin sản phẩm)
+
+Nếu cần chi tiết từng thay đổi, mã nguồn cụ thể hoặc xuất báo cáo định dạng khác, vui lòng liên hệ lại.

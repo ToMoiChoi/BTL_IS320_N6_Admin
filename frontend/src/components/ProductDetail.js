@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import Footer from "./Footer";
 
-const ProductDetail = () => {
+const ProductDetail = ({ isLoggedIn }) => {
   const { productId } = useParams(); // Lấy MaSP từ URL
   const [specs, setSpecs] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSpecs = async () => {
+    const fetchSpecsAndImage = async () => {
       try {
         setLoading(true);
         // Gọi API lấy thông số kỹ thuật dựa trên MaSP
         const response = await fetch(
           `http://127.0.0.1:8000/products/${productId}/thong_so`
         );
-
         if (!response.ok) {
           throw new Error("Không thể tải thông số kỹ thuật sản phẩm");
         }
-
         const data = await response.json();
-        setSpecs(data);
+        // Nếu data là mảng, lấy bản ghi đầu tiên hợp lệ
+        let spec = Array.isArray(data) ? data.find(s => s && s.GiaBan && s.GiaBan !== "0.00") || data[0] : data;
+        setSpecs(spec);
+
+        // Lấy ảnh sản phẩm
+        const mediaRes = await fetch(`http://127.0.0.1:8000/products/${productId}/media`);
+        if (mediaRes.ok) {
+          const mediaData = await mediaRes.json();
+          if (Array.isArray(mediaData) && mediaData.length > 0) {
+            setImageUrl(`http://127.0.0.1:8000${mediaData[0].DuongDanFile}`);
+          }
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -30,7 +41,7 @@ const ProductDetail = () => {
     };
 
     if (productId) {
-      fetchSpecs();
+      fetchSpecsAndImage();
     }
   }, [productId]);
 
@@ -50,79 +61,87 @@ const ProductDetail = () => {
     );
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Cột trái: Hình ảnh (Bạn có thể lấy thêm data sản phẩm chung để hiện ảnh ở đây) */}
-          <div className="flex flex-col items-center">
-            <div className="w-full max-w-md bg-gray-50 rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <img
-                src="https://picsum.photos/600/600" // Thay bằng product.HinhAnh thực tế
-                alt="Sản phẩm"
-                className="w-full h-auto object-contain transition-transform hover:scale-105 duration-500"
-              />
-            </div>
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500 italic font-medium">
-                Màu sắc: {specs.MauSac}
-              </p>
-            </div>
-          </div>
-
-          {/* Cột phải: Thông số kỹ thuật */}
-          <div className="flex flex-col">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Thông số kỹ thuật
-            </h1>
-            <div className="mb-6">
-              <span className="text-3xl font-extrabold text-red-600">
-                {new Intl.NumberFormat("vi-VN").format(specs.GiaBan)}₫
-              </span>
+    <>
+      <div className="bg-white min-h-screen">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Cột trái: Hình ảnh (Bạn có thể lấy thêm data sản phẩm chung để hiện ảnh ở đây) */}
+            <div className="flex flex-col items-center">
+              {/* Tên sản phẩm */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                {specs.TenSP}
+              </h2>
+              <div className="w-full max-w-md bg-gray-50 rounded-2xl p-8 border border-gray-100 shadow-sm">
+                <img
+                  src={imageUrl || "https://via.placeholder.com/600x600?text=No+Image"}
+                  alt="Sản phẩm"
+                  className="w-full h-auto object-contain transition-transform hover:scale-105 duration-500"
+                  onError={e => (e.target.src = "https://via.placeholder.com/600x600?text=No+Image")}
+                />
+              </div>
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-500 italic font-medium">
+                  Màu sắc: {specs.MauSac}
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-sm">
-                <tbody>
-                  {[
-                    {
-                      label: "Màn hình",
-                      value: `${specs.PhienBan} (${specs.KichThuoc})`,
-                    },
-                    { label: "Chipset", value: specs.Chitset },
-                    { label: "RAM", value: specs.RAM },
-                    { label: "Bộ nhớ trong", value: specs.BoNho },
-                    { label: "Hệ điều hành", value: specs.HeDieuHanh },
-                    { label: "Thẻ Sim", value: specs.TheSim },
-                    {
-                      label: "Pin",
-                      value:
-                        specs.Pin === "string" ? "Đang cập nhật" : specs.Pin,
-                    },
-                    { label: "Camera", value: specs.Camera },
-                  ].map((item, index) => (
-                    <tr
-                      key={index}
-                      className={`${
-                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                      } border-b border-gray-100 last:border-0`}
-                    >
-                      <td className="px-4 py-3 font-semibold text-gray-600 w-1/3">
-                        {item.label}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800">{item.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Cột phải: Thông số kỹ thuật */}
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Thông số kỹ thuật
+              </h1>
+              <div className="mb-6">
+                <span className="text-3xl font-extrabold text-red-600">
+                  {new Intl.NumberFormat("vi-VN").format(specs.GiaBan)}₫
+                </span>
+              </div>
 
-            <button className="mt-8 w-full bg-red-600 text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 uppercase tracking-wider">
-              Mua Ngay
-            </button>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {[
+                      {
+                        label: "Màn hình",
+                        value: `${specs.PhienBan} (${specs.KichThuoc})`,
+                      },
+                      { label: "Chipset", value: specs.Chitset },
+                      { label: "RAM", value: specs.RAM },
+                      { label: "Bộ nhớ trong", value: specs.BoNho },
+                      { label: "Hệ điều hành", value: specs.HeDieuHanh },
+                      { label: "Thẻ Sim", value: specs.TheSim },
+                      {
+                        label: "Pin",
+                        value:
+                          specs.Pin === "string" ? "Đang cập nhật" : specs.Pin,
+                      },
+                      { label: "Camera", value: specs.Camera },
+                    ].map((item, index) => (
+                      <tr
+                        key={index}
+                        className={`$${
+                          index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                        } border-b border-gray-100 last:border-0`}
+                      >
+                        <td className="px-4 py-3 font-semibold text-gray-600 w-1/3">
+                          {item.label}
+                        </td>
+                        <td className="px-4 py-3 text-gray-800">{item.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button className="mt-8 w-full bg-red-600 text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 uppercase tracking-wider">
+                Mua Ngay
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <Footer isLoggedIn={isLoggedIn} />
+    </>
   );
 };
 

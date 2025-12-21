@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Footer = () => {
+const Footer = ({ isLoggedIn }) => {
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-12">
@@ -63,17 +63,19 @@ const Footer = () => {
           </div>
 
           {/* Cột 4: Đăng ký nhận KM */}
-          <div>
-            <h3 className="font-bold mb-3 text-gray-800">ĐĂNG KÝ NHẬN KHUYẾN MÃI</h3>
-            <p className="text-gray-600 mb-2">Đăng ký ngay để nhận voucher giảm <span className="font-semibold text-red-600">10%</span>.</p>
-            <input type="email" placeholder="Nhập Email của bạn" className="w-full border border-gray-300 p-2 rounded-lg mb-2 text-sm focus:border-red-500 focus:ring-red-500" />
-            <input type="tel" placeholder="Nhập số điện thoại của bạn" className="w-full border border-gray-300 p-2 rounded-lg mb-3 text-sm focus:border-red-500 focus:ring-red-500" />
-            <div className="flex items-center mb-4">
-              <input type="checkbox" id="agree" className="mr-2 accent-red-600" />
-              <label htmlFor="agree" className="text-xs text-gray-600">Tôi đồng ý với điều khoản của Cellphones S.</label>
+          {!isLoggedIn && (
+            <div>
+              <h3 className="font-bold mb-3 text-gray-800">ĐĂNG KÝ NHẬN KHUYẾN MÃI</h3>
+              <p className="text-gray-600 mb-2">Đăng ký ngay để nhận voucher giảm <span className="font-semibold text-red-600">10%</span>.</p>
+              <input type="email" placeholder="Nhập Email của bạn" className="w-full border border-gray-300 p-2 rounded-lg mb-2 text-sm focus:border-red-500 focus:ring-red-500" />
+              <input type="tel" placeholder="Nhập số điện thoại của bạn" className="w-full border border-gray-300 p-2 rounded-lg mb-3 text-sm focus:border-red-500 focus:ring-red-500" />
+              <div className="flex items-center mb-4">
+                <input type="checkbox" id="agree" className="mr-2 accent-red-600" />
+                <label htmlFor="agree" className="text-xs text-gray-600">Tôi đồng ý với điều khoản của Cellphones S.</label>
+              </div>
+              <button className="w-full bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition">ĐĂNG KÝ NGAY</button>
             </div>
-            <button className="w-full bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition">ĐĂNG KÝ NGAY</button>
-          </div>
+          )}
         </div>
 
         <div className="mt-10 pt-4 border-t border-gray-200">

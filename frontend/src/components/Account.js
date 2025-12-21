@@ -184,7 +184,7 @@ const Account = ({ isLoggedIn, onLogout }) => {
           </section>
         </div>
       </main>
-      <Footer />
+      <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
 };

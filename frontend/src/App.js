@@ -6,6 +6,8 @@ import Login from "./components/login"; // Đảm bảo đúng tên file 'Login'
 import ProductDetail from "./components/ProductDetail";
 import Account from "./components/Account";
 import Header from "./components/Header";
+import CategoryProducts from "./components/CategoryProducts";
+import SearchResults from "./components/SearchResults";
 
 const App = () => {
   const [products, setProducts] = useState([]);
@@ -78,6 +80,16 @@ const App = () => {
         onLogout={handleLogout}
       />
       <Switch>
+        {/* Trang sản phẩm theo danh mục */}
+        <Route
+          path="/category/:categoryId"
+          component={CategoryProducts}
+        />
+        {/* Trang kết quả tìm kiếm */}
+        <Route
+          path="/search"
+          component={SearchResults}
+        />
         {/* Trang Đăng Ký */}
         <Route
           path="/register"
@@ -87,7 +99,7 @@ const App = () => {
         {/* Trang Chi Tiết Sản Phẩm */}
         <Route
           path="/products/:productId"
-          render={(p) => <ProductDetail {...p} />}
+          render={(p) => <ProductDetail {...p} isLoggedIn={isLoggedIn} />}
         />
 
         {/* Trang Đăng Nhập */}
