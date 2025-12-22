@@ -48,7 +48,6 @@ class ThongSoKyThuat(Base):
     MauSac = Column(String(50))
     
     GiaBan = Column(Numeric(12, 2)) # Giá riêng cho phiên bản này
-    SoLuong = Column(Integer, default=0)
 
     sanpham = relationship("SanPham", back_populates="thongso_list")
 

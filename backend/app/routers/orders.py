@@ -131,7 +131,7 @@ def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(
 @router.patch("/{order_id}/status")
 def update_order_status(
     order_id: int, 
-    payload: schemas.OrderStatusUpdate, # Dùng schema mới để nhận status
+    payload: schemas.OrderStatus, # Dùng schema mới để nhận status
     db: Session = Depends(get_db), 
     user=Depends(get_current_user)
 ):

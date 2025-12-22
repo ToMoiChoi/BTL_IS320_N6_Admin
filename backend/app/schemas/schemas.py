@@ -86,7 +86,6 @@ class ThongSoKyThuatBase(BaseModel):
     HeDieuHanh: Optional[str] = None
     MauSac: Optional[str] = None
     GiaBan: Optional[condecimal(max_digits=12, decimal_places=2)] = None
-    SoLuong: int = 0
 
 class ThongSoKyThuatCreate(ThongSoKyThuatBase):
     pass

@@ -63,7 +63,7 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
       if (response.ok) {
         const data = await response.json();
         setOrders(data);
-        
+
         // Fetch thông số kỹ thuật cho tất cả sản phẩm
         if (data.length > 0) {
           await fetchAllProductDetails(data);
@@ -82,38 +82,43 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
     const specs = {};
     const media = {};
     const names = {};
-    
+
     // Lấy tất cả items từ tất cả orders (chitiets hoặc items tùy backend)
-    const allItems = orders.flatMap(order => order.chitiets || order.items || []);
-    
+    const allItems = orders.flatMap(
+      (order) => order.chitiets || order.items || []
+    );
+
     await Promise.all(
       allItems.map(async (item) => {
         if (!item.MaSP) return;
-        
+
         try {
-            const productResponse = await fetch(
-          `http://127.0.0.1:8000/products/${item.MaSP}`
-        );
-        if (productResponse.ok) {
-          const productData = await productResponse.json();
-          names[item.MaSP] = productData.TenSP;
-          console.log(`✅ Product name for ${item.MaSP}:`, productData.TenSP);
-        }
+          const productResponse = await fetch(
+            `http://127.0.0.1:8000/products/${item.MaSP}`
+          );
+          if (productResponse.ok) {
+            const productData = await productResponse.json();
+            names[item.MaSP] = productData.TenSP;
+            console.log(`✅ Product name for ${item.MaSP}:`, productData.TenSP);
+          }
           // Fetch thông số kỹ thuật
           const specResponse = await fetch(
             `http://127.0.0.1:8000/products/${item.MaSP}/thong_so`
           );
           if (specResponse.ok) {
             const specData = await specResponse.json();
-            const specKey = item.MaTSKT 
-            ? `${item.MaSP}-${item.MaTSKT}` 
-            : `${item.MaSP}-null`;
+            const specKey = item.MaTSKT
+              ? `${item.MaSP}-${item.MaTSKT}`
+              : `${item.MaSP}-null`;
             if (item.MaTSKT && Array.isArray(specData)) {
-              const matchedSpec = specData.find(s => s.MaTSKT === item.MaTSKT);
+              const matchedSpec = specData.find(
+                (s) => s.MaTSKT === item.MaTSKT
+              );
               specs[specKey] = matchedSpec || specData[0];
             } else {
-              specs[specKey] = Array.isArray(specData) 
-                ? specData.find(s => s.GiaBan && s.GiaBan !== "0.00") || specData[0]
+              specs[specKey] = Array.isArray(specData)
+                ? specData.find((s) => s.GiaBan && s.GiaBan !== "0.00") ||
+                  specData[0]
                 : specData;
             }
           }
@@ -150,9 +155,12 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
     const statusMap = {
       pending: "Chờ xác nhận",
       confirmed: "Đã xác nhận",
+      processing: "Đang xử lý",
       shipping: "Đang giao hàng",
       delivered: "Đã giao hàng",
+      completed: "Đã hoàn thành", // Khớp với lựa chọn trong ảnh của bạn
       cancelled: "Đã hủy",
+      refunded: "Đã hoàn trả",
     };
     return statusMap[status] || status;
   };
@@ -161,7 +169,10 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
     const colorMap = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+      processing: "bg-indigo-100 text-indigo-800 border-indigo-200",
       shipping: "bg-purple-100 text-purple-800 border-purple-200",
+      // Màu xanh dương đậm (blue-600) + chữ trắng (white) cho trạng thái Completed
+      completed: "bg-blue-600 text-white border-blue-700 shadow-sm",
       delivered: "bg-green-100 text-green-800 border-green-200",
       cancelled: "bg-red-100 text-red-800 border-red-200",
     };
@@ -179,7 +190,9 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">📦 Đơn hàng của tôi</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+          📦 Đơn hàng của tôi
+        </h1>
 
         {orders.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
@@ -201,7 +214,7 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
           <div className="space-y-4">
             {orders.map((order) => {
               const orderItems = order.chitiets || order.items || [];
-              
+
               return (
                 <div
                   key={order.MaDH}
@@ -215,7 +228,8 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
                           Đơn hàng #{order.MaDH}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          Ngày đặt: {new Date(order.NgayDat).toLocaleString("vi-VN")}
+                          Ngày đặt:{" "}
+                          {new Date(order.NgayDat).toLocaleString("vi-VN")}
                         </p>
                       </div>
                       <span
@@ -230,11 +244,18 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="text-sm text-gray-600">
-                          Số lượng: <span className="font-bold">{orderItems.length} sản phẩm</span>
+                          Số lượng:{" "}
+                          <span className="font-bold">
+                            {orderItems.length} sản phẩm
+                          </span>
                         </p>
                         <p className="text-sm text-gray-600">
-                          Tổng tiền: <span className="font-bold text-red-600 text-lg">
-                            {Number(order.TongTien || 0).toLocaleString("vi-VN")}₫
+                          Tổng tiền:{" "}
+                          <span className="font-bold text-red-600 text-lg">
+                            {Number(order.TongTien || 0).toLocaleString(
+                              "vi-VN"
+                            )}
+                            ₫
                           </span>
                         </p>
                       </div>
@@ -243,7 +264,9 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
                         onClick={() => toggleOrderDetails(order.MaDH)}
                         className="px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition"
                       >
-                        {expandedOrders.has(order.MaDH) ? "Ẩn chi tiết ▲" : "Xem chi tiết ▼"}
+                        {expandedOrders.has(order.MaDH)
+                          ? "Ẩn chi tiết ▲"
+                          : "Xem chi tiết ▼"}
                       </button>
                     </div>
                   </div>
@@ -263,8 +286,11 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
                               {userDetails.thongtin.HoTen || "Chưa cập nhật"}
                             </p>
                             <p className="text-gray-700">
-                              <span className="font-semibold">Số điện thoại:</span>{" "}
-                              {userDetails.thongtin.SoDienThoai || "Chưa cập nhật"}
+                              <span className="font-semibold">
+                                Số điện thoại:
+                              </span>{" "}
+                              {userDetails.thongtin.SoDienThoai ||
+                                "Chưa cập nhật"}
                             </p>
                             <p className="text-gray-700">
                               <span className="font-semibold">Địa chỉ:</span>{" "}
@@ -281,7 +307,9 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
                             <span>📦</span> Sản phẩm trong đơn hàng
                           </h4>
                           {orderItems.map((item, index) => {
-                            const specKey = item.MaTSKT ? `${item.MaSP}-${item.MaTSKT}` : `${item.MaSP}-null`;
+                            const specKey = item.MaTSKT
+                              ? `${item.MaSP}-${item.MaTSKT}`
+                              : `${item.MaSP}-null`;
                             const spec = productSpecs[specKey];
                             const images = productMedia[item.MaSP];
                             const imageUrl = images?.[0]?.DuongDanFile
@@ -301,25 +329,44 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
 
                                 <div className="flex-1">
                                   <p className="font-semibold text-gray-800 mb-1">
-                                    {productNames[item.MaSP] || spec?.TenSP || `Sản phẩm #${item.MaSP}`}
-                                    </p>
+                                    {productNames[item.MaSP] ||
+                                      spec?.TenSP ||
+                                      `Sản phẩm #${item.MaSP}`}
+                                  </p>
                                   {spec && (
                                     <p className="text-sm text-gray-600 mb-2">
                                       {spec.RAM} | {spec.BoNho} - {spec.MauSac}
                                     </p>
                                   )}
                                   <div className="flex gap-4 text-sm text-gray-600">
-                                    <p>Số lượng: <span className="font-semibold">{item.SoLuong}</span></p>
-                                    <p>Đơn giá: <span className="font-semibold text-red-600">
-                                      {Number(spec?.GiaBan || item.DonGia || 0).toLocaleString("vi-VN")}₫
-                                    </span></p>
+                                    <p>
+                                      Số lượng:{" "}
+                                      <span className="font-semibold">
+                                        {item.SoLuong}
+                                      </span>
+                                    </p>
+                                    <p>
+                                      Đơn giá:{" "}
+                                      <span className="font-semibold text-red-600">
+                                        {Number(
+                                          spec?.GiaBan || item.DonGia || 0
+                                        ).toLocaleString("vi-VN")}
+                                        ₫
+                                      </span>
+                                    </p>
                                   </div>
                                 </div>
 
                                 <div className="text-right">
-                                  <p className="text-sm text-gray-500 mb-1">Thành tiền</p>
+                                  <p className="text-sm text-gray-500 mb-1">
+                                    Thành tiền
+                                  </p>
                                   <p className="font-bold text-red-600 text-lg">
-                                    {Number((spec?.GiaBan || item.DonGia || 0) * item.SoLuong).toLocaleString("vi-VN")}₫
+                                    {Number(
+                                      (spec?.GiaBan || item.DonGia || 0) *
+                                        item.SoLuong
+                                    ).toLocaleString("vi-VN")}
+                                    ₫
                                   </p>
                                 </div>
                               </div>

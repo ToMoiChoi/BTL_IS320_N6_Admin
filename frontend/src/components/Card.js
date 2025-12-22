@@ -23,7 +23,7 @@ const Card = ({ product }) => {
 
   return (
     <Link
-      to={`/products/${product.MaSP}`}
+      to={`/products/${product.MaSP}`}  
       className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full flex flex-col group"
     >
       {/* Ảnh sản phẩm */}
