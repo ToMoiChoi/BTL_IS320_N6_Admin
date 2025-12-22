@@ -185,12 +185,12 @@ class OrderOut(BaseModel):
         populate_by_name = True
 
 class OrderStatusUpdate(BaseModel):
-    TrangThaiDH: OrderStatus = Field(..., description="Chọn trạng thái đơn hàng")
+    # Khi dùng Enum ở đây, Swagger sẽ tự hiển thị Dropdown
+    TrangThaiDH: OrderStatus = Field(..., description="Chọn trạng thái từ danh sách")
 
     class Config:
         from_attributes = True
         use_enum_values = True
-
 # --- STATS ---
 class RevenueByDay(BaseModel):
     date: datetime

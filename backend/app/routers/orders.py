@@ -1,5 +1,5 @@
 # app/routers/orders.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,Query
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from typing import List # Dùng List cho tương thích tốt hơn
@@ -127,35 +127,30 @@ def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(
     return order
 
 # 4. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (Chỉ dành cho Admin)
-# Cập nhật lại hàm update_order_status
-@router.patch("/{order_id}/status", response_model=schemas.OrderOut) # Trả về OrderOut để khớp với dữ liệu đơn hàng
+@router.patch("/{order_id}/status", response_model=schemas.OrderOut)
 def update_order_status(
     order_id: int, 
-    payload: schemas.OrderStatusUpdate, # SỬA TẠI ĐÂY: Dùng Schema Update chứ không dùng Enum trực tiếp
+    # SỬA Ở ĐÂY: Dùng Enum trực tiếp và đặt tên tham số là 'status' hoặc 'payload'
+    # FastAPI sẽ tự tạo Dropdown cho Enum này trên thanh Parameter
+    status: schemas.OrderStatus = Query(..., description="Chọn trạng thái đơn hàng"), 
     db: Session = Depends(get_db), 
     user=Depends(get_current_user)
 ):
-    # --- BƯỚC 1: Kiểm tra quyền hạn ---
+    # 1. Kiểm tra quyền Admin
     if getattr(user, "MaPQ", 2) != 1:
-        raise HTTPException(status_code=403, detail="Bạn không có quyền cập nhật trạng thái")
+        raise HTTPException(status_code=403, detail="Chỉ Admin mới có quyền này")
 
-    # --- BƯỚC 2: Tìm đơn hàng ---
-    # Thêm joinedload để khi trả về OrderOut, FastAPI có dữ liệu "items" (chitiets)
+    # 2. Tìm đơn hàng
     order = db.query(models.DonHang).options(
-        joinedload(models.DonHang.chitiets) 
+        joinedload(models.DonHang.chitiets)
     ).filter(models.DonHang.MaDH == order_id).first()
     
     if not order:
         raise HTTPException(status_code=404, detail="Đơn hàng không tồn tại")
 
-    # --- BƯỚC 3: Cập nhật ---
-    # payload.TrangThaiDH lúc này sẽ tự động được validate bởi Enum OrderStatus trong Schema
-    order.TrangThaiDH = payload.TrangThaiDH
+    # 3. Cập nhật (status lúc này là giá trị Enum bạn chọn từ Dropdown)
+    order.TrangThaiDH = status.value 
     
-    try:
-        db.commit()
-        db.refresh(order)
-        return order
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Lỗi database: {str(e)}")
+    db.commit()
+    db.refresh(order)
+    return order
