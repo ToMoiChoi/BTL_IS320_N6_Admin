@@ -46,7 +46,9 @@ class ThongSoKyThuat(Base):
     TheSim = Column(String(100))
     HeDieuHanh = Column(String(100))
     MauSac = Column(String(50))
+    
     GiaBan = Column(Numeric(12, 2)) # Giá riêng cho phiên bản này
+    SoLuong = Column(Integer, default=0)
 
     sanpham = relationship("SanPham", back_populates="thongso_list")
 

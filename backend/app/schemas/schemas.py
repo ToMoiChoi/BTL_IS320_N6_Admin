@@ -1,8 +1,21 @@
-
-# app/schemas.py
-from pydantic import BaseModel, EmailStr, condecimal
+from pydantic import BaseModel, EmailStr, condecimal, Field
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
+
+# --- ENUMS (Định nghĩa các tập hợp giá trị cố định) ---
+
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    SHIPPING = "shipping"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    REFUNDED = "refunded"
+
+class MediaType(str, Enum):
+    IMAGE = "image"
+    VIDEO = "video"
 
 # --- CATEGORY (DANH MỤC) ---
 class CategoryOut(BaseModel):
@@ -11,6 +24,7 @@ class CategoryOut(BaseModel):
     Loai: Optional[str] = None
     MoTa: Optional[str] = None
     TrangThai: Optional[bool] = True
+    
     class Config:
         from_attributes = True
 
@@ -71,9 +85,8 @@ class ThongSoKyThuatBase(BaseModel):
     TheSim: Optional[str] = None
     HeDieuHanh: Optional[str] = None
     MauSac: Optional[str] = None
-    
-    # Giá bán gắn liền với cấu hình này
     GiaBan: Optional[condecimal(max_digits=12, decimal_places=2)] = None
+    SoLuong: int = 0
 
 class ThongSoKyThuatCreate(ThongSoKyThuatBase):
     pass
@@ -93,12 +106,11 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
-
 # --- MEDIA (HÌNH ẢNH, VIDEO) ---
 class MediaOut(BaseModel):
     MaMedia: int
     MaSP: int
-    Loai: str
+    Loai: MediaType  # Sử dụng Enum MediaType thay cho str
     DuongDanFile: str
 
     class Config:
@@ -112,11 +124,11 @@ class ProductOut(ProductBase):
 
     class Config:
         from_attributes = True
-# --- CART SCHEMAS ---
 
+# --- CART SCHEMAS ---
 class CartItemCreate(BaseModel):
     MaSP: int
-    MaTSKT: Optional[int] = None  # Cấu hình máy (RAM/ROM) cụ thể
+    MaTSKT: Optional[int] = None
     SoLuongSanPham: int = 1
 
 class CartItemUpdate(BaseModel):
@@ -127,7 +139,6 @@ class CartItemOut(BaseModel):
     MaSP: int
     MaTSKT: Optional[int]
     SoLuongSanPham: int
-    # Bạn có thể thêm thông tin sản phẩm để Frontend hiển thị dễ hơn
     sanpham: Optional[ProductOut] 
     
     class Config:
@@ -141,6 +152,7 @@ class CartOut(BaseModel):
 
     class Config:
         from_attributes = True
+
 # --- ORDER (ĐƠN HÀNG) ---
 class OrderItemCreate(BaseModel):
     MaSP: int
@@ -155,32 +167,32 @@ class OrderItemOut(BaseModel):
     class Config:
         from_attributes = True
 
-# Schema TẠO đơn hàng
 class OrderCreate(BaseModel):
     items: List[OrderItemCreate]
     GiamGia: Optional[condecimal(max_digits=12, decimal_places=2)] = 0
-from pydantic import Field
-# Schema XEM đơn hàng
+
 class OrderOut(BaseModel):
-    MaDH: int
+    MaDH: int 
     MaTK: int
     NgayDat: datetime
     ThanhTien: condecimal(max_digits=14, decimal_places=2)
     TongTien: condecimal(max_digits=14, decimal_places=2)
-    TrangThaiDH: str = "pending"
+    TrangThaiDH: OrderStatus = OrderStatus.PENDING # Giá trị mặc định từ Enum
     
     items: List[OrderItemOut] = Field(default=[], alias="chitiets")
 
     class Config:
         from_attributes = True
         populate_by_name = True
+
 class OrderStatusUpdate(BaseModel):
-    TrangThaiDH: str # Ví dụ: "completed", "shipping", v.v.
+    TrangThaiDH: OrderStatus = Field(..., description="Chọn trạng thái đơn hàng")
 
     class Config:
         from_attributes = True
+        use_enum_values = True
+
 # --- STATS ---
 class RevenueByDay(BaseModel):
     date: datetime
     revenue: condecimal(max_digits=14, decimal_places=2)
-

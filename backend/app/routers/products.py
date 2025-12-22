@@ -13,11 +13,13 @@ router = APIRouter(prefix="/products", tags=["products"])
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# 1. CREATE PRODUCT
-# Sửa payload từ schemas.ProductCreate thành List[schemas.ProductCreate]
-@router.post("/", response_model=List[schemas.ProductOut]) # Trả về list
-def create_product(
-    payload: List[schemas.ProductCreate], # <--- Nhận vào List
+# ============================================================
+# 1. QUẢN LÝ SẢN PHẨM (PRODUCT)
+# ============================================================
+
+@router.post("/", response_model=List[schemas.ProductOut])
+def create_products(
+    payload: List[schemas.ProductCreate], 
     db: Session = Depends(get_db), 
     user=Depends(get_current_user)
 ):
@@ -26,25 +28,20 @@ def create_product(
         p = models.SanPham(
             TenSP=item.TenSP,
             MoTa=item.MoTa,
-            MaDM=item.MaDM,
+            MaDM=item.MaDM
         )
         db.add(p)
         new_products.append(p)
     
     db.commit()
-    
     for p in new_products:
         db.refresh(p)
-        
     return new_products
 
-# 2. LIST PRODUCTS
 @router.get("/", response_model=List[schemas.ProductOut]) 
 def list_products(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
-    products = db.query(models.SanPham).offset(skip).limit(limit).all()
-    return products
+    return db.query(models.SanPham).offset(skip).limit(limit).all()
 
-# 3. GET PRODUCT BY ID
 @router.get("/{product_id}", response_model=schemas.ProductOut)
 def get_product(product_id: int, db: Session = Depends(get_db)):
     p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
@@ -52,181 +49,147 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return p
 
-# 4. UPDATE PRODUCT INFO (General)
-@router.put("/{product_id}", response_model=schemas.ProductOut)
-def update_product_info(product_id: int, payload: schemas.ProductCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    p.TenSP = payload.TenSP
-    p.MoTa = payload.MoTa
-    p.MaDM = payload.MaDM
-
-    db.commit()
-    db.refresh(p)
-    return p
-
-# ============================================================
-# 5. QUẢN LÝ THÔNG SỐ KỸ THUẬT (BIẾN THỂ SẢN PHẨM)
-# ============================================================
-
-
-@router.post("/{product_id}/thong_so", response_model=schemas.ProductOut) 
-def add_product_specs(
-    product_id: int, 
-    specs: List[schemas.ThongSoKyThuatCreate], 
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user)
-):
-    # 1. Tìm sản phẩm cha
-    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    # 2. Insert các thông số mới
-    for item in specs:
-        spec_data = item.dict(exclude_unset=True)
-        new_spec = models.ThongSoKyThuat(
-            MaSP=product_id, 
-            **spec_data      
-        )
-        db.add(new_spec)
-
-    db.commit()
-    db.refresh(p) 
-        
-    return p
-
-# API: Lấy danh sách thông số/biến thể của 1 sản phẩm
-@router.get("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
-def get_product_specs(product_id: int, db: Session = Depends(get_db)):
-    specs_list = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaSP == product_id).all()
-    return specs_list
-
-# API: Xóa một biến thể 
-@router.delete("/thong_so/{thong_so_id}")
-def delete_spec_item(spec_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    spec_item = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == spec_id).first()
-    
-    if not spec_item:
-        raise HTTPException(status_code=404, detail="Variant (Spec) not found")
-    
-    db.delete(spec_item)
-    db.commit()
-    return {"detail": "Deleted spec item"}
-# API: Thêm mới một danh sách thông số cho sản phẩm
-@router.post("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
-def add_product_specs(
-    product_id: int, 
-    specs: List[schemas.ThongSoKyThuatCreate], # Nhận vào một LIST (Mảng)
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user)
-):
-    # 1. Kiểm tra sản phẩm có tồn tại không
-    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    new_specs = []
-    # 2. Lặp qua danh sách gửi lên và thêm vào DB
-    for item in specs:
-        # Tùy chọn: Kiểm tra xem thông số này đã có chưa để Update hay Create
-        # Ở đây làm đơn giản là Create (Thêm mới)
-        new_spec = models.ThongSoKyThuat(
-            MaSP=product_id,
-            TenThongSo=item.TenThongSo,
-            GiaTri=item.GiaTri
-        )
-        db.add(new_spec)
-        new_specs.append(new_spec)
-
-    db.commit()
-    
-    # Refresh từng item để lấy ID vừa tạo
-    for s in new_specs:
-        db.refresh(s)
-        
-    return new_specs
-
-# API: Lấy toàn bộ danh sách thông số của 1 sản phẩm
-@router.get("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
-def get_product_specs(product_id: int, db: Session = Depends(get_db)):
-    # 1. Tìm TẤT CẢ thông số (dùng .all() thay vì .first())
-    specs_list = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaSP == product_id).all()
-    
-    return specs_list
-
-# API: Xóa một dòng thông số cụ thể (Ví dụ: Xóa dòng RAM 8GB nhập sai)
-@router.delete("/thong_so/{thong_so_id}")
-def delete_spec_item(thong_so_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    spec_item = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaThongSo == thong_so_id).first()
-    if not spec_item:
-        raise HTTPException(status_code=404, detail="Spec item not found")
-    
-    db.delete(spec_item)
-    db.commit()
-    return {"detail": "Deleted spec item"}
-# 6. DELETE PRODUCT
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    db.delete(p)
+    db.delete(p) # Sẽ tự động xóa thongso_list và media do có cascade trong models.py
     db.commit()
-    return {"detail": "deleted"}
+    return {"detail": "Deleted product and related data"}
 
-# 7. UPLOAD IMAGE
-@router.post("/{product_id}/upload", response_model=dict)
-async def upload_image(product_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+# ============================================================
+# 2. QUẢN LÝ BIẾN THỂ / THÔNG SỐ (SPECS)
+# ============================================================
+
+@router.post("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
+def add_product_specs(
+    product_id: int, 
+    specs: List[schemas.ThongSoKyThuatCreate], 
+    db: Session = Depends(get_db), 
+    user=Depends(get_current_user)
+):
     p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    file_extension = os.path.splitext(file.filename)[1]
-    filename = f"{product_id}_{int(time.time())}{file_extension}"
+    new_specs = []
+    for item in specs:
+        # Sử dụng **item.dict() để mapping RAM, BoNho, Pin, GiaBan... từ schema vào model
+        new_spec = models.ThongSoKyThuat(
+            MaSP=product_id,
+            **item.dict() 
+        )
+        db.add(new_spec)
+        new_specs.append(new_spec)
+
+    db.commit()
+    for s in new_specs:
+        db.refresh(s)
+    return new_specs
+
+@router.get("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
+def get_product_specs(product_id: int, db: Session = Depends(get_db)):
+    return db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaSP == product_id).all()
+
+@router.post("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
+def add_product_specs(
+    product_id: int, 
+    specs: List[schemas.ThongSoKyThuatCreate], 
+    db: Session = Depends(get_db), 
+    user=Depends(get_current_user)
+):
+    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    new_specs = []
+    for item in specs:
+        # item lúc này đã bao gồm trường SoLuong từ schemas
+        new_spec = models.ThongSoKyThuat(
+            MaSP=product_id,
+            **item.dict() 
+        )
+        db.add(new_spec)
+        new_specs.append(new_spec)
+
+    db.commit()
+    for s in new_specs:
+        db.refresh(s)
+    return new_specs
+
+@router.delete("/thong_so/{tskt_id}")
+def delete_spec_item(tskt_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    spec_item = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == tskt_id).first()
+    if not spec_item:
+        raise HTTPException(status_code=404, detail="Spec item not found")
     
+    db.delete(spec_item)
+    db.commit()
+    return {"detail": "Deleted spec item"}
+@router.patch("/thong_so/{tskt_id}/stock")
+def update_stock_manual(
+    tskt_id: int, 
+    so_luong_moi: int, 
+    db: Session = Depends(get_db), 
+    user=Depends(get_current_user)
+):
+    # Kiểm tra quyền Admin (Giả sử MaPQ == 1 là Admin)
+    if user.MaPQ != 1:
+        raise HTTPException(status_code=403, detail="Chỉ Admin mới có quyền cập nhật kho")
+
+    spec = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == tskt_id).first()
+    if not spec:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biến thể")
+
+    spec.SoLuong = so_luong_moi
+    db.commit()
+    db.refresh(spec)
+    
+    return {"MaTSKT": tskt_id, "SoLuongHienTai": spec.SoLuong}  
+# ============================================================
+# 3. QUẢN LÝ HÌNH ẢNH (MEDIA)
+# ============================================================
+
+@router.post("/{product_id}/upload")
+async def upload_image(
+    product_id: int, 
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db), 
+    user=Depends(get_current_user)
+):
+    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    file_ext = os.path.splitext(file.filename)[1]
+    filename = f"prod_{product_id}_{int(time.time())}{file_ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
+
     with open(filepath, "wb") as f:
         content = await file.read()
         f.write(content)
 
-    relative_path = f"/static/{filename}"
-    
-    media = models.HinhAnhVideo(MaSP=product_id, Loai="image", DuongDanFile=relative_path)
-    db.add(media)
+    new_media = models.HinhAnhVideo(
+        MaSP=product_id,
+        Loai="image",
+        DuongDanFile=f"/static/{filename}"
+    )
+    db.add(new_media)
     db.commit()
-    db.refresh(media)
-    
-    return {"filename": filename, "path": relative_path}
+    return {"id": new_media.MaMedia, "path": new_media.DuongDanFile}
 
-# 8. GET PRODUCT MEDIA (Lấy danh sách hình ảnh/video)
-@router.get("/{product_id}/media", response_model=List[schemas.MediaOut]) # Giả sử bạn có MediaOut trong schemas
+@router.get("/{product_id}/media", response_model=List[schemas.MediaOut])
 def get_product_media(product_id: int, db: Session = Depends(get_db)):
-    # 1. Kiểm tra sản phẩm tồn tại
-    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Product not found")
+    return db.query(models.HinhAnhVideo).filter(models.HinhAnhVideo.MaSP == product_id).all()
 
-    # 2. Lấy danh sách media từ bảng hinhanhvideo
-    media_list = db.query(models.HinhAnhVideo).filter(models.HinhAnhVideo.MaSP == product_id).all()
-    
-    return media_list
-
-# 9. DELETE MEDIA (Xóa một ảnh cụ thể)
 @router.delete("/media/{media_id}")
 def delete_media(media_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     media_item = db.query(models.HinhAnhVideo).filter(models.HinhAnhVideo.MaMedia == media_id).first()
     if not media_item:
         raise HTTPException(status_code=404, detail="Media not found")
 
-    # Tùy chọn: Xóa file vật lý trong thư mục uploads
-    # file_path = media_item.DuongDanFile.replace("/static/", UPLOAD_DIR + "/")
-    # if os.path.exists(file_path):
-    #     os.remove(file_path)
-
     db.delete(media_item)
     db.commit()
-    return {"detail": "Deleted media item"}
+    return {"detail": "Deleted media"}
