@@ -14,7 +14,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
   const [updateForm, setUpdateForm] = useState({
     HoTen: "",
     SoDienThoai: "",
-    DiaChi: ""
+    DiaChi: "",
   });
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
       if (response.ok) {
         const data = await response.json();
         setCart(data);
-        
+
         if (data.items && data.items.length > 0) {
           await fetchProductSpecs(data.items);
         }
@@ -86,7 +86,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
 
   const fetchProductSpecs = async (items) => {
     const specs = {};
-    
+
     await Promise.all(
       items.map(async (item) => {
         try {
@@ -96,11 +96,11 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
           if (response.ok) {
             const data = await response.json();
             if (item.MaTSKT && Array.isArray(data)) {
-              const matchedSpec = data.find(s => s.MaTSKT === item.MaTSKT);
+              const matchedSpec = data.find((s) => s.MaTSKT === item.MaTSKT);
               specs[item.MaSP] = matchedSpec || data[0];
             } else {
-              specs[item.MaSP] = Array.isArray(data) 
-                ? data.find(s => s.GiaBan && s.GiaBan !== "0.00") || data[0]
+              specs[item.MaSP] = Array.isArray(data)
+                ? data.find((s) => s.GiaBan && s.GiaBan !== "0.00") || data[0]
                 : data;
             }
           }
@@ -109,7 +109,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
         }
       })
     );
-    
+
     setProductSpecs(specs);
   };
 
@@ -119,14 +119,17 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/cart/items/${itemId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ SoLuongSanPham: newQuantity }),
-      });
+      const response = await fetch(
+        `http://127.0.0.1:8000/cart/items/${itemId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ SoLuongSanPham: newQuantity }),
+        }
+      );
 
       if (response.ok) {
         await fetchCart();
@@ -146,13 +149,16 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/cart/items/${itemId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `http://127.0.0.1:8000/cart/items/${itemId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         await fetchCart();
@@ -173,9 +179,17 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
     const diaChi = userMe?.thongtin?.DiaChi || "";
 
     // Kiểm tra nếu có giá trị rỗng hoặc giá trị mặc định
-    if (!hoTen || hoTen === "User" || hoTen === "Chưa cập nhật" ||
-        !soDienThoai || soDienThoai === "Chưa cập nhật" || soDienThoai === "Chưa cập nhật số điện thoại" ||
-        !diaChi || diaChi === "Chưa cập nhật" || diaChi === "Chưa cập nhật địa chỉ") {
+    if (
+      !hoTen ||
+      hoTen === "User" ||
+      hoTen === "Chưa cập nhật" ||
+      !soDienThoai ||
+      soDienThoai === "Chưa cập nhật" ||
+      soDienThoai === "Chưa cập nhật số điện thoại" ||
+      !diaChi ||
+      diaChi === "Chưa cập nhật" ||
+      diaChi === "Chưa cập nhật địa chỉ"
+    ) {
       return false;
     }
     return true;
@@ -185,7 +199,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
     setUpdateForm({
       HoTen: userMe?.thongtin?.HoTen || "",
       SoDienThoai: userMe?.thongtin?.SoDienThoai || "",
-      DiaChi: userMe?.thongtin?.DiaChi || ""
+      DiaChi: userMe?.thongtin?.DiaChi || "",
     });
     setShowUpdateModal(true);
   };
@@ -196,9 +210,13 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
 
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
-    if (!updateForm.HoTen.trim() || !updateForm.SoDienThoai.trim() || !updateForm.DiaChi.trim()) {
+    if (
+      !updateForm.HoTen.trim() ||
+      !updateForm.SoDienThoai.trim() ||
+      !updateForm.DiaChi.trim()
+    ) {
       alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
@@ -246,14 +264,14 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
     }
 
     const token = localStorage.getItem("token");
-    
+
     const orderData = {
-      items: cartItems.map(item => ({
+      items: cartItems.map((item) => ({
         MaSP: item.MaSP,
         SoLuong: item.SoLuongSanPham,
-        MaTSKT: item.MaTSKT || 0
+        MaTSKT: item.MaTSKT || 0,
       })),
-      GiamGia: 0
+      GiamGia: 0,
     };
 
     try {
@@ -309,7 +327,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
   }
 
   const cartItems = cart?.items || [];
-  
+
   const totalAmount = cartItems.reduce((sum, item) => {
     const spec = productSpecs[item.MaSP];
     const price = spec?.GiaBan || item.sanpham?.GiaBan || 0;
@@ -321,13 +339,19 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">🛒 Giỏ hàng của bạn</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+          🛒 Giỏ hàng của bạn
+        </h1>
 
         {cartItems.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
             <div className="text-6xl mb-4">🛒</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Giỏ hàng trống</h2>
-            <p className="text-gray-600 mb-6">Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Giỏ hàng trống
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
+            </p>
             <button
               onClick={() => history.push("/")}
               className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition"
@@ -351,7 +375,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                     key={item.MaCTGH}
                     className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex gap-6 items-center"
                   >
-                    <img    
+                    <img
                       src={imageUrl}
                       alt={product?.TenSP || "Sản phẩm"}
                       className="w-24 h-24 object-contain rounded-lg border border-gray-200"
@@ -359,7 +383,7 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
 
                     <div className="flex-1">
                       <h3 className="font-bold text-lg text-gray-800 mb-2">
-                        {product?.TenSP || "Tên sản phẩm"}  
+                        {product?.TenSP || "Tên sản phẩm"}
                       </h3>
                       <p className="text-red-600 font-bold text-xl">
                         {Number(spec?.GiaBan || 0).toLocaleString("vi-VN")}₫
@@ -373,15 +397,21 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
 
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => updateQuantity(item.MaCTGH, item.SoLuongSanPham - 1)}
+                        onClick={() =>
+                          updateQuantity(item.MaCTGH, item.SoLuongSanPham - 1)
+                        }
                         disabled={updating || item.SoLuongSanPham <= 1}
                         className="w-8 h-8 bg-gray-200 rounded-lg font-bold hover:bg-gray-300 transition disabled:opacity-50"
                       >
                         −
                       </button>
-                      <span className="w-12 text-center font-bold">{item.SoLuongSanPham}</span>
+                      <span className="w-12 text-center font-bold">
+                        {item.SoLuongSanPham}
+                      </span>
                       <button
-                        onClick={() => updateQuantity(item.MaCTGH, item.SoLuongSanPham + 1)}
+                        onClick={() =>
+                          updateQuantity(item.MaCTGH, item.SoLuongSanPham + 1)
+                        }
                         disabled={updating}
                         className="w-8 h-8 bg-gray-200 rounded-lg font-bold hover:bg-gray-300 transition disabled:opacity-50"
                       >
@@ -418,22 +448,28 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                       Sửa
                     </button>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Tên người nhận</p>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Tên người nhận
+                      </p>
                       <p className="text-sm font-semibold text-gray-800">
                         {userMe.thongtin?.HoTen || "Chưa cập nhật"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Số điện thoại</p>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Số điện thoại
+                      </p>
                       <p className="text-sm font-semibold text-gray-800">
                         {userMe.thongtin?.SoDienThoai || "Chưa cập nhật"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Địa chỉ nhận hàng</p>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Địa chỉ nhận hàng
+                      </p>
                       <p className="text-sm font-semibold text-gray-800">
                         {userMe.thongtin?.DiaChi || "Chưa cập nhật"}
                       </p>
@@ -443,7 +479,8 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                   {!isUserInfoComplete && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-semibold">
-                        ⚠️ Vui lòng cập nhật đầy đủ thông tin để tiếp tục thanh toán
+                        ⚠️ Vui lòng cập nhật đầy đủ thông tin để tiếp tục thanh
+                        toán
                       </p>
                     </div>
                   )}
@@ -452,12 +489,16 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
 
               {/* Tóm tắt đơn hàng */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Tóm tắt đơn hàng</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-6">
+                  Tóm tắt đơn hàng
+                </h2>
 
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Tạm tính ({cartItems.length} sản phẩm)</span>
-                    <span className="font-bold">{totalAmount.toLocaleString("vi-VN")}₫</span>
+                    <span className="font-bold">
+                      {totalAmount.toLocaleString("vi-VN")}₫
+                    </span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Phí vận chuyển</span>
@@ -466,7 +507,9 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                   <hr className="border-gray-200" />
                   <div className="flex justify-between text-lg font-bold text-gray-800">
                     <span>Tổng cộng</span>
-                    <span className="text-red-600">{totalAmount.toLocaleString("vi-VN")}₫</span>
+                    <span className="text-red-600">
+                      {totalAmount.toLocaleString("vi-VN")}₫
+                    </span>
                   </div>
                 </div>
 
@@ -479,7 +522,9 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  {isUserInfoComplete ? "Tiến hành thanh toán" : "Cập nhật thông tin để thanh toán"}
+                  {isUserInfoComplete
+                    ? "Tiến hành thanh toán"
+                    : "Cập nhật thông tin để thanh toán"}
                 </button>
 
                 <button
@@ -520,7 +565,9 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                 <input
                   type="text"
                   value={updateForm.HoTen}
-                  onChange={(e) => setUpdateForm({...updateForm, HoTen: e.target.value})}
+                  onChange={(e) =>
+                    setUpdateForm({ ...updateForm, HoTen: e.target.value })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Nhập tên của bạn"
                   required
@@ -534,7 +581,12 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                 <input
                   type="tel"
                   value={updateForm.SoDienThoai}
-                  onChange={(e) => setUpdateForm({...updateForm, SoDienThoai: e.target.value})}
+                  onChange={(e) =>
+                    setUpdateForm({
+                      ...updateForm,
+                      SoDienThoai: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Nhập số điện thoại"
                   required
@@ -547,7 +599,9 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                 </label>
                 <textarea
                   value={updateForm.DiaChi}
-                  onChange={(e) => setUpdateForm({...updateForm, DiaChi: e.target.value})}
+                  onChange={(e) =>
+                    setUpdateForm({ ...updateForm, DiaChi: e.target.value })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Nhập địa chỉ"
                   rows="3"

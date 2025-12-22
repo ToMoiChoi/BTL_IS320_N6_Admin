@@ -1,81 +1,77 @@
+# app/routers/orders.py
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from decimal import Decimal
-from typing import List
+from typing import List # Dùng List cho tương thích tốt hơn
 from ..database import get_db
 from ..schemas import schemas
-from ..schemas.schemas import OrderStatus 
 from ..models import models
 from ..deps import get_current_user
 
+
 router = APIRouter(prefix="/orders", tags=["orders"])
 
-# ============================================================
-# 1. TẠO ĐƠN HÀNG & TRỪ TỒN KHO
-# ============================================================
+# 1. TẠO ĐƠN HÀNG
 @router.post("/", response_model=schemas.OrderOut)
 def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     try:
+        # --- BƯỚC 1: Chuẩn bị dữ liệu và Tính toán ---
         total = Decimal("0.00")
         items_to_create = []
 
-        # 1. Kiểm tra và chuẩn bị dữ liệu (Khóa dòng để tránh tranh chấp kho)
+        # Duyệt qua từng sản phẩm trong giỏ hàng
         for item_in in payload.items:
             if item_in.SoLuong <= 0:
-                raise HTTPException(status_code=400, detail=f"Số lượng phải lớn hơn 0 (Sản phẩm ID: {item_in.MaSP})")
+                raise HTTPException(status_code=400, detail=f"Số lượng sản phẩm ID {item_in.MaSP} phải lớn hơn 0")
 
-            # .with_for_update() giúp ngăn chặn các giao dịch khác sửa đổi hàng này cho đến khi commit
-            spec_item = db.query(models.ThongSoKyThuat).filter(
-                models.ThongSoKyThuat.MaTSKT == item_in.MaTSKT
-            ).with_for_update().first()
+            # Lấy thông tin sản phẩm từ DB
+            product = db.query(models.SanPham).filter(models.SanPham.MaSP == item_in.MaSP).first()
+            spec_item = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == item_in.MaTSKT).first()
+            if product.MaSP != item_in.MaSP:
+                raise HTTPException(status_code=404, detail=f"Sản phẩm ID {item_in.MaSP} không có cấu hình kỹ thuật ID {item_in.MaTSKT}")
             
-            if not spec_item:
-                raise HTTPException(status_code=404, detail=f"Không tìm thấy cấu hình mã {item_in.MaTSKT}")
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Sản phẩm ID {item_in.MaSP} không tồn tại")
             
-            if spec_item.MaSP != item_in.MaSP:
-                 raise HTTPException(status_code=400, detail="Cấu hình kỹ thuật không khớp với sản phẩm")
+            # (Tùy chọn) Kiểm tra tồn kho - Nếu model SanPham có trường SoLuongTon
+            # if product.SoLuongTon < item_in.SoLuong:
+            #     raise HTTPException(status_code=400, detail=f"Sản phẩm {product.TenSP} không đủ hàng")
 
-            # KIỂM TRA TỒN KHO
-            if spec_item.SoLuong < item_in.SoLuong:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Sản phẩm {spec_item.PhienBan} chỉ còn {spec_item.SoLuong} máy. Vui lòng cập nhật lại giỏ hàng."
-                )
-            
-            # TRỪ KHO TẠM THỜI (Sẽ lưu chính thức khi commit)
-            spec_item.SoLuong -= item_in.SoLuong
-
-            price = Decimal(str(spec_item.GiaBan))
+            price = Decimal(str(spec_item.GiaBan)) if spec_item else Decimal("0.00")
             line_total = price * item_in.SoLuong
             total += line_total
             
+            # Lưu tạm thông tin để tạo ChiTietDonHang sau
             items_to_create.append({
                 "MaSP": item_in.MaSP,
-                "MaTSKT": spec_item.MaTSKT,
+                "MaTSKT": spec_item.MaTSKT if spec_item else None,
                 "SoLuong": item_in.SoLuong,
                 "DonGia": price,
             })
 
-        # 2. Tính toán tiền bạc
+            # product.SoLuongTon -= item_in.SoLuong
+
+        # --- BƯỚC 2: Tính tổng tiền cuối cùng ---
         tong_tien = total
         giam_gia = Decimal(str(payload.GiamGia or 0))
         thanh_tien = (tong_tien - giam_gia) if (tong_tien - giam_gia) >= 0 else Decimal("0.00")
 
-        # 3. Lưu Đơn hàng tổng
+        # --- BƯỚC 3: Tạo Đơn hàng (Master) ---
+        # Lưu ý: Lấy MaTK từ user đang đăng nhập (token) chứ không lấy từ payload để bảo mật
         new_order = models.DonHang(
             MaTK=user.MaTK, 
             TongTien=tong_tien,
             GiamGia=giam_gia,
             ThanhTien=thanh_tien,
-            TrangThaiDH=OrderStatus.PENDING 
+            TrangThaiDH="pending" # Mặc định là Chờ xử lý
         )
         db.add(new_order)
-        db.flush() 
+        db.flush() # flush để database sinh ra MaDH (ID tự tăng) nhưng chưa commit hẳn
 
-        # 4. Lưu Chi tiết đơn hàng
+        # --- BƯỚC 4: Tạo Chi tiết đơn hàng (Detail) ---
         for it in items_to_create:
             detail_item = models.ChiTietDonHang(
-                MaDH=new_order.MaDH,
+                MaDH=new_order.MaDH, # Lấy ID vừa sinh ra ở trên
                 MaSP=it["MaSP"],
                 MaTSKT=it["MaTSKT"],
                 SoLuong=it["SoLuong"],
@@ -83,36 +79,40 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), us
             )
             db.add(detail_item)
 
+        # Nếu mọi thứ ổn, commit tất cả vào DB
         db.commit()
         db.refresh(new_order)
         return new_order
 
     except HTTPException as he:
+        # Nếu lỗi logic (hết hàng, ko tìm thấy SP) -> throw ra ngoài
         db.rollback()
         raise he
     except Exception as e:
+        # Nếu lỗi Database hoặc lỗi code khác -> Rollback toàn bộ transaction
         db.rollback()
-        print(f"Checkout Error: {e}") 
-        raise HTTPException(status_code=500, detail="Lỗi hệ thống khi xử lý đơn hàng")
-
-# ============================================================
+        print(f"Error creating order: {e}") # Log lỗi để debug
+        raise HTTPException(status_code=500, detail="Không thể tạo đơn hàng, vui lòng thử lại")
+from sqlalchemy.orm import joinedload
 # 2. LẤY DANH SÁCH ĐƠN HÀNG
-# ============================================================
 @router.get("/", response_model=List[schemas.OrderOut])
 def list_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    query = db.query(models.DonHang).options(joinedload(models.DonHang.chitiets))
+    if getattr(user, "MaPQ", 2) == 1:
+        orders = db.query(models.DonHang).options(
+            joinedload(models.DonHang.chitiets)
+        ).all()
+    else:
+        orders = db.query(models.DonHang).options(
+            joinedload(models.DonHang.chitiets)
+        ).filter(models.DonHang.MaTK == user.MaTK).all()
     
-    # Nếu không phải Admin thì chỉ thấy đơn của mình
-    if getattr(user, "MaPQ", 2) != 1:
-        query = query.filter(models.DonHang.MaTK == user.MaTK)
-    
-    return query.order_by(models.DonHang.NgayDat.desc()).all()
+    return orders
 
-# ============================================================
-# 3. XEM CHI TIẾT 1 ĐƠN HÀNG
-# ============================================================
+# 3. (Bổ sung) XEM CHI TIẾT 1 ĐƠN HÀNG
+# Bạn cần tạo thêm Schema OrderDetailOut bao gồm list items nếu muốn dùng hàm này
 @router.get("/{order_id}", response_model=schemas.OrderOut)
 def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    # ← THÊM joinedload ĐỂ EAGER LOAD chitiets
     order = db.query(models.DonHang).options(
         joinedload(models.DonHang.chitiets)
     ).filter(models.DonHang.MaDH == order_id).first()
@@ -120,39 +120,42 @@ def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(
     if not order:
         raise HTTPException(status_code=404, detail="Đơn hàng không tồn tại")
     
+    # Bảo mật: Nếu không phải Admin VÀ đơn hàng này không phải của User đó -> Chặn
     if getattr(user, "MaPQ", 2) != 1 and order.MaTK != user.MaTK:
         raise HTTPException(status_code=403, detail="Bạn không có quyền xem đơn hàng này")
         
     return order
 
-# ============================================================
-# 4. CẬP NHẬT TRẠNG THÁI & HOÀN KHO KHI HỦY
-# ============================================================
-@router.patch("/{order_id}/status")
+# 4. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (Chỉ dành cho Admin)
+# Cập nhật lại hàm update_order_status
+@router.patch("/{order_id}/status", response_model=schemas.OrderOut) # Trả về OrderOut để khớp với dữ liệu đơn hàng
 def update_order_status(
     order_id: int, 
-    payload: schemas.OrderStatus, # Dùng schema mới để nhận status
+    payload: schemas.OrderStatusUpdate, # SỬA TẠI ĐÂY: Dùng Schema Update chứ không dùng Enum trực tiếp
     db: Session = Depends(get_db), 
     user=Depends(get_current_user)
 ):
+    # --- BƯỚC 1: Kiểm tra quyền hạn ---
     if getattr(user, "MaPQ", 2) != 1:
-        raise HTTPException(status_code=403, detail="Chỉ Admin mới có quyền thay đổi trạng thái")
+        raise HTTPException(status_code=403, detail="Bạn không có quyền cập nhật trạng thái")
 
-    order = db.query(models.DonHang).options(joinedload(models.DonHang.chitiets)).filter(models.DonHang.MaDH == order_id).first()
+    # --- BƯỚC 2: Tìm đơn hàng ---
+    # Thêm joinedload để khi trả về OrderOut, FastAPI có dữ liệu "items" (chitiets)
+    order = db.query(models.DonHang).options(
+        joinedload(models.DonHang.chitiets) 
+    ).filter(models.DonHang.MaDH == order_id).first()
+    
     if not order:
-        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng")
+        raise HTTPException(status_code=404, detail="Đơn hàng không tồn tại")
 
-    old_status = order.TrangThaiDH
-    new_status = payload.TrangThaiDH
-
-    # LOGIC HOÀN KHO: Nếu chuyển từ trạng thái khác sang CANCELLED
-    if new_status == OrderStatus.CANCELLED and old_status != OrderStatus.CANCELLED:
-        for detail in order.chitiets:
-            if detail.MaTSKT:
-                spec = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == detail.MaTSKT).first()
-                if spec:
-                    spec.SoLuong += detail.SoLuong # Cộng lại số lượng vào kho
-
-    order.TrangThaiDH = new_status
-    db.commit()
-    return {"message": f"Trạng thái đơn hàng chuyển từ {old_status} sang {new_status}"}
+    # --- BƯỚC 3: Cập nhật ---
+    # payload.TrangThaiDH lúc này sẽ tự động được validate bởi Enum OrderStatus trong Schema
+    order.TrangThaiDH = payload.TrangThaiDH
+    
+    try:
+        db.commit()
+        db.refresh(order)
+        return order
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi database: {str(e)}")
