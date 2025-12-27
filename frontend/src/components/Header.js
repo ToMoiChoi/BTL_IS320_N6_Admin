@@ -40,13 +40,48 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
             searchText.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
           )
         );
-        setSearchResults(filtered.slice(0, 6)); // Hiện tối đa 6 gợi ý
+        
+        // Lấy thông số và media cho mỗi sản phẩm, chỉ giữ sản phẩm có giá
+        const productsWithPrice = await Promise.all(
+          filtered.slice(0, 10).map(async (p) => {
+            try {
+              // Gọi API lấy thông số kỹ thuật (bao gồm giá)
+              const [resSpec, resMedia] = await Promise.all([
+                fetch(`${API_URL}/products/${p.MaSP}/thong_so`),
+                fetch(`${API_URL}/products/${p.MaSP}/media`),
+              ]);
+              const specData = await resSpec.json();
+              const mediaData = await resMedia.json();
+              
+              // Lấy biến thể đầu tiên có giá > 0
+              const specs = Array.isArray(specData) ? specData : [];
+              const spec = specs.find(s => s && s.GiaBan && s.GiaBan !== "0.00" && Number(s.GiaBan) > 0) || specs[0];
+              
+              return {
+                ...p,
+                GiaBan: spec?.GiaBan,
+                RAM: spec?.RAM,
+                BoNho: spec?.BoNho,
+                media: Array.isArray(mediaData) ? mediaData : [],
+              };
+            } catch {
+              return { ...p, GiaBan: null, media: [] };
+            }
+          })
+        );
+        
+        // Chỉ hiển thị sản phẩm có giá hợp lệ
+        const validProducts = productsWithPrice.filter(
+          p => p.GiaBan && p.GiaBan !== "0.00" && Number(p.GiaBan) > 0
+        );
+        
+        setSearchResults(validProducts.slice(0, 6)); // Hiện tối đa 6 gợi ý
         setShowSuggestions(true);
       } catch {
         setSearchResults([]);
         setShowSuggestions(false);
       }
-    }, 250);
+    }, 300);
     return () => clearTimeout(searchTimeout.current);
   }, [searchText]);
   useEffect(() => {
