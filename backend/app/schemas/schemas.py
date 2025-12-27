@@ -91,6 +91,20 @@ class ThongSoKyThuatBase(BaseModel):
 class ThongSoKyThuatCreate(ThongSoKyThuatBase):
     pass
 
+class ThongSoKyThuatUpdate(BaseModel):
+    KichThuoc: Optional[str] = None
+    Camera: Optional[str] = None
+    PhienBan: Optional[str] = None
+    Chitset: Optional[str] = None
+    RAM: Optional[str] = None
+    BoNho: Optional[str] = None 
+    Pin: Optional[str] = None
+    TheSim: Optional[str] = None
+    HeDieuHanh: Optional[str] = None
+    MauSac: Optional[str] = None
+    GiaBan: Optional[condecimal(max_digits=12, decimal_places=2)] = None
+    SoLuong: Optional[int] = None
+
 class ThongSoKyThuatOut(ThongSoKyThuatBase):
     MaTSKT: int
     MaSP: int 
@@ -105,6 +119,11 @@ class ProductBase(BaseModel):
 
 class ProductCreate(ProductBase):
     pass
+
+class ProductUpdate(BaseModel):
+    TenSP: Optional[str] = None
+    MoTa: Optional[str] = None
+    MaDM: Optional[int] = None
 
 # --- MEDIA (HÌNH ẢNH, VIDEO) ---
 class MediaOut(BaseModel):

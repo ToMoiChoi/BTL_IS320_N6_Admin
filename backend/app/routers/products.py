@@ -59,6 +59,39 @@ def delete_product(product_id: int, db: Session = Depends(get_db), user=Depends(
     db.commit()
     return {"detail": "Deleted product and related data"}
 
+@router.put("/{product_id}")
+def update_product(product_id: int, payload: schemas.ProductUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    if payload.TenSP is not None:
+        p.TenSP = payload.TenSP
+    if payload.MoTa is not None:
+        p.MoTa = payload.MoTa
+    if payload.MaDM is not None:
+        p.MaDM = payload.MaDM
+    
+    db.commit()
+    db.refresh(p)
+    return p
+
+@router.put("/{product_id}/thong_so/{tskt_id}")
+def update_spec(product_id: int, tskt_id: int, payload: schemas.ThongSoKyThuatUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    spec = db.query(models.ThongSoKyThuat).filter(
+        models.ThongSoKyThuat.MaTSKT == tskt_id,
+        models.ThongSoKyThuat.MaSP == product_id
+    ).first()
+    if not spec:
+        raise HTTPException(status_code=404, detail="Spec not found")
+    
+    for field, value in payload.dict(exclude_unset=True).items():
+        setattr(spec, field, value)
+    
+    db.commit()
+    db.refresh(spec)
+    return spec
+
 # ============================================================
 # 2. QUẢN LÝ BIẾN THỂ / THÔNG SỐ (SPECS)
 # ============================================================

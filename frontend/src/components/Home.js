@@ -33,6 +33,7 @@ const Home = ({
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSort, setSelectedSort] = useState("");
+  const [displayCount, setDisplayCount] = useState(10); // Show 10 products initially
   const history = useHistory();
 
   useEffect(() => {
@@ -227,7 +228,7 @@ const Home = ({
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {sortedProducts.map((product) => (
+          {sortedProducts.slice(0, displayCount).map((product) => (
             <Card key={product.MaSP} product={product} />
           ))}
         </div>
@@ -249,21 +250,17 @@ const Home = ({
         )}
 
         {/* Load More */}
-        {sortedProducts.length > 0 && (
+        {sortedProducts.length > displayCount && (
           <div className="text-center mt-8">
-            <button className="px-8 py-3 bg-white border-2 border-red-600 text-red-600 font-bold rounded-xl hover:bg-red-50 transition">
-              Xem thêm sản phẩm
+            <button 
+              onClick={() => setDisplayCount(prev => prev + 10)}
+              className="px-8 py-3 bg-white border-2 border-red-600 text-red-600 font-bold rounded-xl hover:bg-red-50 transition"
+            >
+              Xem thêm sản phẩm ({sortedProducts.length - displayCount} còn lại)
             </button>
           </div>
         )}
       </div>
-
-      {/* Floating Contact Button */}
-      <button className="fixed bottom-8 right-8 bg-red-600 text-white px-5 py-4 rounded-2xl shadow-2xl hover:bg-red-700 transition-all z-50 flex items-center gap-2 transform hover:scale-105 active:scale-95">
-        <span className="text-2xl animate-bounce">🎧</span>
-        <span className="font-bold hidden sm:block">Tư vấn</span>
-      </button>
-
       <Footer isLoggedIn={isLoggedIn} />
     </div>
   );

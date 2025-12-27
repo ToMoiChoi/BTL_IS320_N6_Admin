@@ -11,6 +11,11 @@ import SearchResults from "./components/SearchResults";
 import Cart from "./components/Cart";
 import Order from "./components/Order";
 import Bill from "./components/Bill";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminOrders from "./components/admin/AdminOrders";
+import AdminProducts from "./components/admin/AdminProducts";
+import AdminCustomers from "./components/admin/AdminCustomers";
+import ChatBot from "./components/ChatBot";
 import { API_URL } from "./config";
 
 const App = () => {
@@ -75,12 +80,43 @@ const App = () => {
 
   return (
     <Router>
-      <Header
-        isLoggedIn={isLoggedIn}
-        userInfo={userInfo}
-        onLogout={handleLogout}
-      />
+      {/* Hide Header on admin routes */}
+      <Route render={({ location }) => 
+        !location.pathname.startsWith('/admin') && (
+          <Header
+            isLoggedIn={isLoggedIn}
+            userInfo={userInfo}
+            onLogout={handleLogout}
+          />
+        )
+      } />
       <Switch>
+        {/* Admin Routes */}
+        <Route
+          exact
+          path="/admin"
+          render={() => (
+            <AdminDashboard userInfo={userInfo} onLogout={handleLogout} />
+          )}
+        />
+        <Route
+          path="/admin/orders"
+          render={() => (
+            <AdminOrders userInfo={userInfo} onLogout={handleLogout} />
+          )}
+        />
+        <Route
+          path="/admin/products"
+          render={() => (
+            <AdminProducts userInfo={userInfo} onLogout={handleLogout} />
+          )}
+        />
+        <Route
+          path="/admin/customers"
+          render={() => (
+            <AdminCustomers userInfo={userInfo} onLogout={handleLogout} />
+          )}
+        />
         {/* Trang giỏ hàng */}
         <Route
           path="/cart"
@@ -163,6 +199,7 @@ const App = () => {
           <Bill isLoggedIn={isLoggedIn} />
         </Route>
       </Switch>
+      <ChatBot />
     </Router>
   );
 };
