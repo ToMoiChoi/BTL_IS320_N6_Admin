@@ -169,6 +169,18 @@ class DonHang(Base):
     trangthai = relationship("TrangThaiDonHang", back_populates="donhangs")
     chitiets = relationship("ChiTietDonHang", back_populates="donhang", cascade="all, delete-orphan")
 
+    @property
+    def TrangThaiDH(self):
+        """Maps MaTrangThai ID to English status string for frontend compatibility"""
+        status_map = {
+            1: "pending",
+            2: "processing", 
+            3: "shipping",
+            4: "completed",
+            5: "cancelled"
+        }
+        return status_map.get(self.MaTrangThai, "pending")
+
 class ChiTietDonHang(Base):
     __tablename__ = "chitietdonhang"
     MaCTDH = Column(Integer, primary_key=True)
