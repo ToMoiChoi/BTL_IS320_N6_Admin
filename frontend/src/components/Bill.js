@@ -62,12 +62,12 @@ const Bill = ({ isLoggedIn }) => {
       if (response.ok) {
         const data = await response.json();
         console.log("📄 Bill data:", data);
-        console.log("📄 Items:", data.items || data.chitiets); // ← DEBUG
+        console.log("📄 Items:", data.items || data.chitiets); 
         setOrder(data);
 
         // ← SỬA: Lấy orderItems từ data, KHÔNG phải từ state
         const orderItems = data.items || data.chitiets || [];
-        console.log("📦 Order items to fetch:", orderItems); // ← DEBUG
+        console.log("📦 Order items to fetch:", orderItems); 
 
         if (orderItems.length > 0) {
           await fetchProductDetails(orderItems);

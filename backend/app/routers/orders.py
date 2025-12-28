@@ -67,7 +67,7 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), us
             TongTien=tong_tien,
             GiamGia=giam_gia,
             ThanhTien=thanh_tien,
-            TrangThaiDH=OrderStatus.PENDING 
+            MaTrangThai=1 # 1 = PENDING (from seed_3nf.py)
         )
         db.add(new_order)
         db.flush() 
@@ -100,7 +100,11 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), us
 # ============================================================
 @router.get("/", response_model=List[schemas.OrderOut])
 def list_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    query = db.query(models.DonHang).options(joinedload(models.DonHang.chitiets))
+    # Eager load chitiets AND trangthai
+    query = db.query(models.DonHang).options(
+        joinedload(models.DonHang.chitiets),
+        joinedload(models.DonHang.trangthai)
+    )
     
     # Nếu không phải Admin thì chỉ thấy đơn của mình
     if getattr(user, "MaPQ", 2) != 1:
@@ -114,7 +118,8 @@ def list_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
 @router.get("/{order_id}", response_model=schemas.OrderOut)
 def get_order_detail(order_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     order = db.query(models.DonHang).options(
-        joinedload(models.DonHang.chitiets)
+        joinedload(models.DonHang.chitiets),
+        joinedload(models.DonHang.trangthai)
     ).filter(models.DonHang.MaDH == order_id).first()
     
     if not order:
@@ -138,21 +143,44 @@ def update_order_status(
     if getattr(user, "MaPQ", 2) != 1:
         raise HTTPException(status_code=403, detail="Chỉ Admin mới có quyền thay đổi trạng thái")
 
-    order = db.query(models.DonHang).options(joinedload(models.DonHang.chitiets)).filter(models.DonHang.MaDH == order_id).first()
+    order = db.query(models.DonHang).options(
+        joinedload(models.DonHang.chitiets),
+        joinedload(models.DonHang.trangthai)
+    ).filter(models.DonHang.MaDH == order_id).first()
+    
     if not order:
         raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng")
 
-    old_status = order.TrangThaiDH
-    new_status = payload.TrangThaiDH
+    # Mapping status string to ID
+    status_map = {
+        "pending": 1,
+        "processing": 2,
+        "shipping": 3,
+        "completed": 4,
+        "cancelled": 5,
+        "refunded": 5 # Treat refunded same as cancelled for now or add to seed
+    }
+
+    old_status = order.trangthai.TenTrangThai if order.trangthai else "unknown"
+    new_status_str = payload.TrangThaiDH
+    
+    if new_status_str not in status_map:
+         raise HTTPException(status_code=400, detail="Trạng thái không hợp lệ")
+
+    new_ma_tt = status_map[new_status_str]
 
     # LOGIC HOÀN KHO: Nếu chuyển từ trạng thái khác sang CANCELLED
-    if new_status == OrderStatus.CANCELLED and old_status != OrderStatus.CANCELLED:
+    if new_status_str == OrderStatus.CANCELLED and old_status != OrderStatus.CANCELLED:
         for detail in order.chitiets:
             if detail.MaTSKT:
                 spec = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == detail.MaTSKT).first()
                 if spec:
                     spec.SoLuong += detail.SoLuong # Cộng lại số lượng vào kho
 
-    order.TrangThaiDH = new_status
+    order.MaTrangThai = new_ma_tt
     db.commit()
-    return {"message": f"Trạng thái đơn hàng chuyển từ {old_status} sang {new_status}"}
+    
+    # Reload relationship to return correct string
+    db.refresh(order)
+    
+    return {"message": f"Trạng thái đơn hàng chuyển từ {old_status} sang {new_status_str}"}

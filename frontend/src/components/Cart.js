@@ -454,7 +454,6 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
               {/* Tóm tắt đơn hàng */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Tóm tắt đơn hàng</h2>
-
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Tạm tính ({cartItems.length} sản phẩm)</span>

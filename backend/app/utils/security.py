@@ -13,7 +13,7 @@ pwd_context = CryptContext(
     deprecated="auto"
 )
 
-# ... (rest of the configuration remains the same) ...
+# ... (rest of the configuration remains the same) ..
 SECRET_KEY = os.environ.get("SECRET_KEY", "Insecure-Default-Key-Change-Me-For-Production-12345")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 
