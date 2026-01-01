@@ -152,7 +152,7 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
       pending: "Chờ xác nhận",
       confirmed: "Đã xác nhận",
       shipping: "Đang giao hàng",
-      delivered: "Đã giao hàng",
+      completed: "Đã giao hàng",
       cancelled: "Đã hủy",
     };
     return statusMap[status] || status;
@@ -163,7 +163,7 @@ const Order = ({ isLoggedIn, userInfo, onLogout }) => {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       confirmed: "bg-blue-100 text-blue-800 border-blue-200",
       shipping: "bg-purple-100 text-purple-800 border-purple-200",
-      delivered: "bg-green-100 text-green-800 border-green-200",
+      completed: "bg-green-100 text-green-800 border-green-200",
       cancelled: "bg-red-100 text-red-800 border-red-200",
     };
     return colorMap[status] || "bg-gray-100 text-gray-800 border-gray-200";
