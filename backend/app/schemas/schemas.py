@@ -215,3 +215,11 @@ class OrderStatusUpdate(BaseModel):
 class RevenueByDay(BaseModel):
     date: datetime
     revenue: condecimal(max_digits=14, decimal_places=2)
+
+class ChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[list] = []
+
+class ChatResponse(BaseModel):
+    reply: str
+    products: Optional[list] = []

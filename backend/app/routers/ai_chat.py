@@ -4,9 +4,14 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 import os
-import google.generativeai as genai
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from ..database import get_db
 from ..models import models
+from ..schemas import schemas
+# Load environment variables
+load_dotenv()
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -35,13 +40,6 @@ Thông tin sản phẩm hiện có:
 Lưu ý: Nếu khách hỏi về sản phẩm không có trong danh sách, hãy giới thiệu sản phẩm tương tự hoặc đề nghị liên hệ hotline 1800.2097 để được hỗ trợ thêm.
 """
 
-class ChatRequest(BaseModel):
-    message: str
-    conversation_history: Optional[list] = []
-
-class ChatResponse(BaseModel):
-    reply: str
-    products: Optional[list] = []
 
 def get_products_info(db: Session) -> str:
     """Get current products info for context"""
@@ -62,21 +60,20 @@ def get_products_info(db: Session) -> str:
     
     return "\n".join(info_list)
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
+@router.post("/chat", response_model=schemas.ChatResponse)
+async def chat_with_ai(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     """Chat with AI assistant for customer support"""
     
     if not GEMINI_API_KEY:
         # Fallback response if no API key
-        return ChatResponse(
+        return schemas.ChatResponse(
             reply="Xin chào! 👋 Tôi là trợ lý ảo của CellphoneS. Hiện tại hệ thống AI đang được cập nhật. Vui lòng liên hệ hotline 1800.2097 để được tư vấn trực tiếp nhé! 📞",
             products=[]
         )
     
     try:
-        # Configure Gemini
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        # Create client with new SDK
+        client = genai.Client(api_key=GEMINI_API_KEY)
         
         # Get products info for context
         products_info = get_products_info(db)
@@ -84,27 +81,38 @@ async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
         # Build the full prompt
         full_prompt = SYSTEM_PROMPT.format(products_info=products_info)
         
-        # Build conversation
-        conversation = []
-        for msg in request.conversation_history[-6:]:  # Keep last 6 messages for context
-            conversation.append(msg)
+        # Build conversation history for context
+        history_text = ""
+        for msg in request.conversation_history[-6:]:
+            role = "Khách" if msg.get("role") == "user" else "Bot"
+            parts = msg.get("parts", [])
+            content = parts[0] if parts else ""
+            history_text += f"{role}: {content}\n"
         
-        # Add current message
-        conversation.append({"role": "user", "parts": [request.message]})
+        # Create the full message
+        user_message = f"""
+{full_prompt}
+
+Lịch sử hội thoại:
+{history_text}
+
+Khách hàng: {request.message}
+
+Hãy trả lời ngắn gọn, thân thiện:
+"""
         
-        # Create chat
-        chat = model.start_chat(history=[
-            {"role": "user", "parts": [full_prompt]},
-            {"role": "model", "parts": ["Tôi đã hiểu. Tôi là trợ lý tư vấn của CellphoneS, sẵn sàng hỗ trợ khách hàng!"]},
-        ])
+        # Get response using new SDK
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=user_message
+        )
         
-        # Get response
-        response = chat.send_message(request.message)
+        reply_text = response.text if response.text else "Xin lỗi, tôi không thể xử lý yêu cầu này. Vui lòng thử lại!"
         
         # Extract product recommendations if any
         recommended_products = []
         for product in db.query(models.SanPham).all():
-            if product.TenSP.lower() in response.text.lower():
+            if product.TenSP.lower() in reply_text.lower():
                 specs = db.query(models.ThongSoKyThuat).filter(
                     models.ThongSoKyThuat.MaSP == product.MaSP
                 ).first()
@@ -115,14 +123,14 @@ async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
                         "GiaBan": float(specs.GiaBan) if specs.GiaBan else 0
                     })
         
-        return ChatResponse(
-            reply=response.text,
+        return schemas.ChatResponse(
+            reply=reply_text,
             products=recommended_products[:3]  # Max 3 recommendations
         )
         
     except Exception as e:
         print(f"AI Chat Error: {e}")
-        return ChatResponse(
+        return schemas.ChatResponse(
             reply=f"Xin lỗi, tôi gặp sự cố kỹ thuật. 😅 Bạn có thể liên hệ hotline 1800.2097 để được hỗ trợ ngay nhé! 📞",
             products=[]
         )

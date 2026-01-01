@@ -1,8 +1,17 @@
 import os
+from pathlib import Path
 from passlib.context import CryptContext
 from typing import Optional
 from datetime import datetime, timedelta, timezone 
 from jose import jwt, JWTError
+from dotenv import load_dotenv
+
+# Load environment variables - .env.local takes priority
+env_local = Path(__file__).parent.parent.parent / ".env.local"
+if env_local.exists():
+    load_dotenv(env_local)
+else:
+    load_dotenv()
 
 # --- CONFIGURATION ---
 
@@ -13,10 +22,10 @@ pwd_context = CryptContext(
     deprecated="auto"
 )
 
-# ... (rest of the configuration remains the same) ..
+# Load from environment
 SECRET_KEY = os.environ.get("SECRET_KEY", "Insecure-Default-Key-Change-Me-For-Production-12345")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 
+ALGORITHM = os.environ.get("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
 # --- PASSWORD HASHING FUNCTIONS ---
 

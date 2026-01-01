@@ -1,0 +1,14 @@
+# Dependencies
+package-lock.json
+
+# Build files
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+
+# Environment (local secrets)
+.env.local

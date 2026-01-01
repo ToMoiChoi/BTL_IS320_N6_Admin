@@ -1,6 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { VIETQR_API } from '../config';
 
 const Footer = ({ isLoggedIn }) => {
+
+  const [paymentMethods, setPaymentMethods] = useState([]);
+
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      try {
+        const response = await fetch(`${VIETQR_API}`);
+        const result = await response.json();
+        if (result.code === "00" && result.data) {
+          setPaymentMethods(result.data.slice(0, 10));
+        }
+      } catch (error) {
+        console.error('Error fetching payment methods:', error);
+      }
+    };
+
+    fetchPaymentMethods();  
+  }, []);
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-12">
@@ -13,14 +32,21 @@ const Footer = ({ isLoggedIn }) => {
             <p className="mb-4 text-gray-600">Khiếu nại: <span className="font-semibold text-red-600">1800.1744</span> (8h00 - 21h30)</p>
 
             <h3 className="font-bold mb-3 text-gray-800">Phương thức thanh toán</h3>
-            {/* <div className="flex flex-wrap gap-2">
-              <img src="https://via.placeholder.com/30x20.png?text=VNPay" alt="VNPay" className="h-5 w-auto" />
-              <img src="https://via.placeholder.com/30x20.png?text=Moca" alt="Moca" className="h-5 w-auto" />
-              <img src="https://via.placeholder.com/30x20.png?text=Visa" alt="Visa" className="h-5 w-auto" />
-              <img src="https://via.placeholder.com/30x20.png?text=Master" alt="MasterCard" className="h-5 w-auto" />
-              <img src="https://via.placeholder.com/30x20.png?text=JCB" alt="JCB" className="h-5 w-auto" />
-              <img src="https://via.placeholder.com/30x20.png?text=Payoo" alt="Payoo" className="h-5 w-auto" />
-            </div> */}
+            <div className="flex flex-wrap gap-2">
+              {paymentMethods.length > 0 ? (
+                paymentMethods.map((bank) => (
+                  <img
+                    key={bank.id || bank.bin}
+                    src={bank.logo}
+                    alt={bank.shortName || bank.name}
+                    title={bank.name}
+                    className="h-6 w-auto rounded border border-gray-100"
+                  />
+                ))
+              ) : (
+                <span className="text-gray-400 text-xs">Đang tải...</span>
+              )}
+            </div>  
           </div>
 
           {/* Cột 2: Thông tin và chính sách */}
