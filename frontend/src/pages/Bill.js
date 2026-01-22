@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
-import Footer from "./Footer";
+import { Footer } from "../components/layout";
 import { API_URL } from "../config";
 
 const Bill = ({ isLoggedIn }) => {

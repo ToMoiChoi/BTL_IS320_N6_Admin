@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
-import Card from "./Card";
-import Breadcrumb from "./Breadcrumb";
-import SortBar from "./SortBar";
+import { Card, Breadcrumb, SortBar } from "../components/common";
 import { API_URL } from "../config";
 
 function useQuery() {

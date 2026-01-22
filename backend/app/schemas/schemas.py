@@ -196,3 +196,26 @@ class OrderStatusUpdate(BaseModel):
 class RevenueByDay(BaseModel):
     date: datetime
     revenue: condecimal(max_digits=14, decimal_places=2)
+
+# --- RECOMMENDATIONS ---
+class RecommendationItem(BaseModel):
+    """Thông tin sản phẩm gợi ý (lightweight)."""
+    MaSP: int
+    TenSP: str
+    GiaThapNhat: Optional[float] = None
+    AnhDaiDien: Optional[str] = None
+    TongTonKho: int = 0
+
+    class Config:
+        from_attributes = True
+
+class RecommendationsResponse(BaseModel):
+    """Response cho API gợi ý sản phẩm."""
+    source_product_id: int
+    source_category_id: Optional[int] = None
+    recommendations: List[RecommendationItem] = []
+    total_count: int = 0
+    latency_ms: float = 0.0
+
+    class Config:
+        from_attributes = True

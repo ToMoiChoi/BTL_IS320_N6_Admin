@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
-import Header from "./Header";
-import Footer from "./Footer";
+import { Footer } from "../components/layout";
 import { API_URL } from "../config";
 
 const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
@@ -475,8 +474,8 @@ const Cart = ({ isLoggedIn, userInfo, onLogout }) => {
                   onClick={handleCheckout}
                   disabled={!isUserInfoComplete}
                   className={`w-full font-bold py-3 rounded-lg transition shadow-lg ${isUserInfoComplete
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                 >
                   {isUserInfoComplete ? "Tiến hành thanh toán" : "Cập nhật thông tin để thanh toán"}

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { HashRouter as Router, Route, Switch } from "react-router-dom";
-import Register from "./components/Register";
-import Home from "./components/Home";
-import Login from "./components/login";
-import ProductDetail from "./components/ProductDetail";
-import Account from "./components/Account";
-import Header from "./components/Header";
-import CategoryProducts from "./components/CategoryProducts";
-import SearchResults from "./components/SearchResults";
-import Cart from "./components/Cart";
-import Order from "./components/Order";
-import Bill from "./components/Bill";
+// Pages
+import Register from "./pages/Register";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import ProductDetail from "./pages/ProductDetail";
+import Account from "./pages/Account";
+import CategoryProducts from "./pages/CategoryProducts";
+import SearchResults from "./pages/SearchResults";
+import Cart from "./pages/Cart";
+import Order from "./pages/Order";
+import Bill from "./pages/Bill";
+// Layout
+import Header from "./components/layout/Header";
+// Config
 import { API_URL } from "./config";
 
 const App = () => {

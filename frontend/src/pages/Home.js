@@ -1,7 +1,6 @@
 import React, { useMemo, useEffect, useState } from "react";
-import Footer from "./Footer";
-import Card from "./Card";
-import Header from "./Header";
+import { Footer } from "../components/layout";
+import { Card } from "../components/common";
 import { useHistory } from "react-router-dom";
 import { API_URL } from "../config";
 

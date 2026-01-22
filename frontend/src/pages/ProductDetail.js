@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useHistory } from "react-router-dom";
-import Footer from "./Footer";
+import { Footer } from "../components/layout";
+import { ProductRecommendations } from "../components/common";
 import { API_URL } from "../config";
 
 const ProductDetail = ({ isLoggedIn }) => {
@@ -187,6 +188,9 @@ const ProductDetail = ({ isLoggedIn }) => {
             </div>
           </div>
         </div>
+
+        {/* Sản phẩm gợi ý */}
+        <ProductRecommendations productId={parseInt(productId)} limit={6} />
       </div>
       <Footer isLoggedIn={isLoggedIn} />
     </>

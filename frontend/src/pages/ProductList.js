@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Card from "../../../../BTL_IS320_N6_APP/src/components/Card"; // Đảm bảo đường dẫn đúng tới file Card.js của bạn
+import { Card } from "../components/common";
 import { API_URL } from "../config";
 
 const ProductList = () => {

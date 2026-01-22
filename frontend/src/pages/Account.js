@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useHistory } from "react-router-dom";
-import Header from "./Header";
-import Footer from "./Footer";
+import { Footer } from "../components/layout";
 import { API_URL } from "../config";
 
 const Account = ({ isLoggedIn, onLogout }) => {
@@ -229,8 +228,8 @@ const Account = ({ isLoggedIn, onLogout }) => {
                 </h2>
                 <span
                   className={`px-4 py-1 rounded-full text-xs font-bold uppercase ${isAdmin
-                      ? "bg-purple-100 text-purple-700 border border-purple-200"
-                      : "bg-blue-100 text-blue-700 border border-blue-200"
+                    ? "bg-purple-100 text-purple-700 border border-purple-200"
+                    : "bg-blue-100 text-blue-700 border border-blue-200"
                     }`}
                 >
                   {isAdmin ? "Quản trị viên" : "Khách hàng Member"}

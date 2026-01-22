@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useHistory } from "react-router-dom";
-import { API_URL } from "../config";
+import { API_URL } from "../../config";
 
 // Thêm prop cartCount để hiển thị số lượng sản phẩm thực tế
 const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {

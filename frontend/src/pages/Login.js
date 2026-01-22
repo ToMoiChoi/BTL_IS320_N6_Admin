@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useHistory, Link } from "react-router-dom";
+import { API_URL } from "../config";
 
 const Login = ({ onLoginSuccess }) => {
   const history = useHistory();
@@ -24,7 +25,7 @@ const Login = ({ onLoginSuccess }) => {
       params.append("username", formData.username);
       params.append("password", formData.password);
 
-      const response = await fetch("http://localhost:8000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

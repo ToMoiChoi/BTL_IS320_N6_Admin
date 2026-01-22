@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
-import Header from "./Header";
-import Footer from "./Footer";
+import { Footer } from "../components/layout";
 import { API_URL } from "../config";
 
 const Order = ({ isLoggedIn, userInfo, onLogout }) => {

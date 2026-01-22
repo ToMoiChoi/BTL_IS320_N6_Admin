@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
+import { API_URL } from "../config";
 
 const Register = ({ onLoginSuccess }) => {
   const history = useHistory();
@@ -23,7 +24,7 @@ const Register = ({ onLoginSuccess }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -44,7 +45,7 @@ const Register = ({ onLoginSuccess }) => {
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
       }
-      
+
       if (onLoginSuccess) onLoginSuccess(data);
 
       alert("Đăng ký tài khoản thành công!");
