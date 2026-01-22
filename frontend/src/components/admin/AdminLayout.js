@@ -9,6 +9,7 @@ const AdminLayout = ({ children, userInfo, onLogout }) => {
     { path: '/admin', icon: '📊', label: 'Dashboard' },
     { path: '/admin/orders', icon: '📦', label: 'Đơn hàng' },
     { path: '/admin/products', icon: '📱', label: 'Sản phẩm' },
+    { path: '/admin/categories', icon: '📂', label: 'Danh mục' },
     { path: '/admin/customers', icon: '👥', label: 'Khách hàng' },
   ];
 

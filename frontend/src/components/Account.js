@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useHistory } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
-import { API_URL } from "../config";
+import { API_URL, PROVINCES_API } from "../config";
 
 const Account = ({ isLoggedIn, onLogout }) => {
   const history = useHistory();
@@ -19,9 +19,14 @@ const Account = ({ isLoggedIn, onLogout }) => {
     old_password: "",
     new_password: "",
   });
-  const [updating, setUpdating] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
-
+    // Provinces API states
+  const [provinces, setProvinces] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [selectedWard, setSelectedWard] = useState(null);
+  const [addressDetail, setAddressDetail] = useState("");
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     const fetchUserMe = async () => {
@@ -63,7 +68,7 @@ const Account = ({ isLoggedIn, onLogout }) => {
     if (onLogout) onLogout();
     history.push("/");
   };
-
+  
   const openUpdateModal = () => {
     setUpdateForm({
       HoTen: userMe.thongtin?.HoTen || "",

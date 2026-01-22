@@ -12,8 +12,9 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
   // 2. Tên hiển thị ưu tiên TenDangNhap từ Model TaiKhoan
   const displayName = userInfo?.TenDangNhap || userInfo?.username || "User";
 
-  // Dropdown danh mục cứng
+  // Dropdown danh mục động
   const [showDropdown, setShowDropdown] = useState(false);
+  const [categories, setCategories] = useState([]);
   const dropdownRef = useRef(null);
 
   // Tìm kiếm sản phẩm
@@ -100,6 +101,22 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
     };
   }, [showDropdown]);
 
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_URL}/categories`);
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   return (
     <header className="bg-gradient-to-r from-red-600 to-red-500 text-white sticky top-0 z-50 shadow-lg font-sans">
       <div className="container mx-auto px-4 py-3">
@@ -120,24 +137,26 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
             >
               <span className="text-sm font-medium">☰ Danh mục</span>
             </button>
-            {/* Dropdown danh mục cứng */}
+            {/* Dropdown danh mục động */}
             {showDropdown && (
               <div className="absolute left-0 top-full mt-2 w-56 bg-white text-gray-800 rounded-xl shadow-xl z-50 border border-gray-100 animate-in fade-in slide-in-from-top-2">
                 <div className="py-2">
-                  <Link
-                    to="/category/0"
-                    className="block px-4 py-2 text-sm hover:bg-red-50 rounded-lg transition"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    iPhone
-                  </Link>
-                  <Link
-                    to="/category/1"
-                    className="block px-4 py-2 text-sm hover:bg-blue-50 rounded-lg transition"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    SamSung
-                  </Link>
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <Link
+                        key={cat.MaDM}
+                        to={`/category/${cat.MaDM}`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-50 rounded-lg transition"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <span>{cat.Icon || "📱"}</span>
+                        <span>{cat.TenDM}</span>
+                        <span className="ml-auto text-xs text-gray-400">({cat.SoLuongSP})</span>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-sm text-gray-400">Không có danh mục</div>
+                  )}
                 </div>
               </div>
             )}

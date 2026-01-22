@@ -18,12 +18,26 @@ class MediaType(str, Enum):
     VIDEO = "video"
 
 # --- CATEGORY (DANH MỤC) ---
-class CategoryOut(BaseModel):
-    MaDM: int
+class CategoryBase(BaseModel):
     TenDM: str
     Loai: Optional[str] = None
     MoTa: Optional[str] = None
+    Icon: Optional[str] = None
     TrangThai: Optional[bool] = True
+
+class CategoryCreate(CategoryBase):
+    pass
+
+class CategoryUpdate(BaseModel):
+    TenDM: Optional[str] = None
+    Loai: Optional[str] = None
+    MoTa: Optional[str] = None
+    Icon: Optional[str] = None
+    TrangThai: Optional[bool] = None
+
+class CategoryOut(CategoryBase):
+    MaDM: int
+    SoLuongSP: Optional[int] = 0  # Số sản phẩm trong danh mục
     
     class Config:
         from_attributes = True
@@ -91,20 +105,6 @@ class ThongSoKyThuatBase(BaseModel):
 class ThongSoKyThuatCreate(ThongSoKyThuatBase):
     pass
 
-class ThongSoKyThuatUpdate(BaseModel):
-    KichThuoc: Optional[str] = None
-    Camera: Optional[str] = None
-    PhienBan: Optional[str] = None
-    Chitset: Optional[str] = None
-    RAM: Optional[str] = None
-    BoNho: Optional[str] = None 
-    Pin: Optional[str] = None
-    TheSim: Optional[str] = None
-    HeDieuHanh: Optional[str] = None
-    MauSac: Optional[str] = None
-    GiaBan: Optional[condecimal(max_digits=12, decimal_places=2)] = None
-    SoLuong: Optional[int] = None
-
 class ThongSoKyThuatOut(ThongSoKyThuatBase):
     MaTSKT: int
     MaSP: int 
@@ -119,11 +119,6 @@ class ProductBase(BaseModel):
 
 class ProductCreate(ProductBase):
     pass
-
-class ProductUpdate(BaseModel):
-    TenSP: Optional[str] = None
-    MoTa: Optional[str] = None
-    MaDM: Optional[int] = None
 
 # --- MEDIA (HÌNH ẢNH, VIDEO) ---
 class MediaOut(BaseModel):
@@ -216,10 +211,37 @@ class RevenueByDay(BaseModel):
     date: datetime
     revenue: condecimal(max_digits=14, decimal_places=2)
 
+# --- RECOMMENDATIONS ---
+class RecommendationItem(BaseModel):
+    """Thông tin sản phẩm gợi ý (lightweight)."""
+    MaSP: int
+    TenSP: str
+    GiaThapNhat: Optional[float] = None
+    AnhDaiDien: Optional[str] = None
+    TongTonKho: int = 0
+
+    class Config:
+        from_attributes = True
+
+class RecommendationsResponse(BaseModel):
+    """Response cho API gợi ý sản phẩm."""
+    source_product_id: int
+    source_category_id: Optional[int] = None
+    recommendations: List[RecommendationItem] = []
+    total_count: int = 0
+    latency_ms: float = 0.0
+
+    class Config:
+        from_attributes = True
+
+# --- AI CHAT ---
 class ChatRequest(BaseModel):
     message: str
-    conversation_history: Optional[list] = []
 
 class ChatResponse(BaseModel):
     reply: str
-    products: Optional[list] = []
+    source: str
+    confidence: float
+    
+    class Config:
+        from_attributes = True

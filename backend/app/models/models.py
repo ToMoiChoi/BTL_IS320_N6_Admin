@@ -6,49 +6,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
 
-# ============================================================
-# 3NF NORMALIZED LOOKUP TABLES
-# ============================================================
-
-# PhanQuyen (User Roles) - 3NF
-class PhanQuyen(Base):
-    __tablename__ = "phanquyen"
-    MaPQ = Column(Integer, primary_key=True, index=True)
-    TenPQ = Column(String(100), nullable=False, unique=True)
-    MoTa = Column(Text)
-    
-    taikhoans = relationship("TaiKhoan", back_populates="phanquyen")
-
-# MauSac (Colors) - 3NF lookup table (for future use)
-class MauSac(Base):
-    __tablename__ = "mausac"
-    MaMS = Column(Integer, primary_key=True, index=True)
-    TenMauSac = Column(String(100), nullable=False)
-    MaHex = Column(String(7))  # #FFFFFF format
-    # Note: ThongSoKyThuat uses MauSac as string, not FK
-
-# TrangThaiDonHang (Order Statuses) - 3NF
-class TrangThaiDonHang(Base):
-    __tablename__ = "trangthai_donhang"
-    MaTT = Column(Integer, primary_key=True, index=True)
-    TenTrangThai = Column(String(50), nullable=False, unique=True)
-    MoTa = Column(Text)
-    ThuTu = Column(Integer, default=0)  # Order for display
-    
-    donhangs = relationship("DonHang", back_populates="trangthai")
-
-# LoaiKhuyenMai (Promotion Types) - 3NF lookup table (for future use)
-class LoaiKhuyenMai(Base):
-    __tablename__ = "loai_khuyenmai"
-    MaLoai = Column(Integer, primary_key=True, index=True)
-    TenLoai = Column(String(100), nullable=False, unique=True)
-    MoTa = Column(Text)
-    # Note: KhuyenMai can optionally reference this table
-
-# ============================================================
-# MAIN TABLES
-# ============================================================
-
 # DanhMuc
 class DanhMuc(Base):
     __tablename__ = "danhmuc"
@@ -56,6 +13,7 @@ class DanhMuc(Base):
     TenDM = Column(String(255), nullable=False)
     Loai = Column(String(100))
     MoTa = Column(Text)
+    Icon = Column(String(100))  # Icon class hoặc emoji
     TrangThai = Column(Boolean, default=True)
 
     sanphams = relationship("SanPham", back_populates="danhmuc")
@@ -88,9 +46,9 @@ class ThongSoKyThuat(Base):
     Pin = Column(String(100))
     TheSim = Column(String(100))
     HeDieuHanh = Column(String(100))
-    MauSac = Column(String(50))  # Keep as string for backward compatibility
+    MauSac = Column(String(50))
     
-    GiaBan = Column(Numeric(12, 2))
+    GiaBan = Column(Numeric(12, 2)) # Giá riêng cho phiên bản này
     SoLuong = Column(Integer, default=0)
 
     sanpham = relationship("SanPham", back_populates="thongso_list")
@@ -112,10 +70,9 @@ class TaiKhoan(Base):
     TenDangNhap = Column(String(150), unique=True, index=True, nullable=False)
     MatKhauHash = Column(String(255), nullable=False)
     Email = Column(String(255), unique=True, index=True, nullable=False)
-    MaPQ = Column(Integer, ForeignKey("phanquyen.MaPQ"), default=2, nullable=False)  # 3NF: FK to PhanQuyen
+    MaPQ = Column(Integer, default=2, nullable=False)  # 1=admin, 2=user
     CreatedAt = Column(DateTime(timezone=True), server_default=func.now())
 
-    phanquyen = relationship("PhanQuyen", back_populates="taikhoans")
     thongtin = relationship("ThongTinCaNhan", back_populates="taikhoan", uselist=False)
     donhangs = relationship("DonHang", back_populates="taikhoan")
 
@@ -163,23 +120,10 @@ class DonHang(Base):
     GiamGia = Column(Numeric(12,2), default=0)
     ThanhTien = Column(Numeric(14,2), nullable=False)
     TongTien = Column(Numeric(14,2), nullable=False)
-    MaTrangThai = Column(Integer, ForeignKey("trangthai_donhang.MaTT"), default=1)  # 3NF: FK to TrangThaiDonHang
+    TrangThaiDH = Column(String(50), default="pending")
 
     taikhoan = relationship("TaiKhoan", back_populates="donhangs")
-    trangthai = relationship("TrangThaiDonHang", back_populates="donhangs")
     chitiets = relationship("ChiTietDonHang", back_populates="donhang", cascade="all, delete-orphan")
-
-    @property
-    def TrangThaiDH(self):
-        """Maps MaTrangThai ID to English status string for frontend compatibility"""
-        status_map = {
-            1: "pending",
-            2: "processing", 
-            3: "shipping",
-            4: "completed",
-            5: "cancelled"
-        }
-        return status_map.get(self.MaTrangThai, "pending")
 
 class ChiTietDonHang(Base):
     __tablename__ = "chitietdonhang"
@@ -208,7 +152,7 @@ class KhuyenMai(Base):
     __tablename__ = "khuyenmai"
     MaKM = Column(Integer, primary_key=True)
     TenKM = Column(String(255))
-    LoaiKM = Column(String(100))  # Keep as string for backward compatibility
+    LoaiKM = Column(String(100))
     MaGiamGia = Column(Numeric(12,2))
     GiaTriGiam = Column(Numeric(12,2))
     NgayBatDau = Column(DateTime(timezone=True))

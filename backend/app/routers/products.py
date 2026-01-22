@@ -60,7 +60,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db), user=Depends(
     return {"detail": "Deleted product and related data"}
 
 @router.put("/{product_id}")
-def update_product(product_id: int, payload: schemas.ProductUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def update_product(product_id: int, payload: schemas.ProductCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -77,7 +77,7 @@ def update_product(product_id: int, payload: schemas.ProductUpdate, db: Session 
     return p
 
 @router.put("/{product_id}/thong_so/{tskt_id}")
-def update_spec(product_id: int, tskt_id: int, payload: schemas.ThongSoKyThuatUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def update_spec(product_id: int, tskt_id: int, payload: schemas.ThongSoKyThuatCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     spec = db.query(models.ThongSoKyThuat).filter(
         models.ThongSoKyThuat.MaTSKT == tskt_id,
         models.ThongSoKyThuat.MaSP == product_id

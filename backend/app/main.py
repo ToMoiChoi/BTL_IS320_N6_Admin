@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .database import engine, Base
 from app.models import models  # ensure models imported for metadata
-from app.routers import auth, products, users, orders, stats, cart, categories, websocket, ai_chat
+from app.routers import auth, products, users, orders, stats, cart, categories, websocket, ai_chat, recommendations
 from app.middlewares.request_logger import RequestLoggerMiddleware
 import os
 from dotenv import load_dotenv
@@ -45,6 +45,7 @@ app.include_router(cart.router)
 app.include_router(orders.router)
 app.include_router(stats.router)
 app.include_router(categories.router)
+app.include_router(recommendations.router)
 app.include_router(websocket.router)
 app.include_router(ai_chat.router)
 app.mount("/static", StaticFiles(directory="uploads"), name="static")

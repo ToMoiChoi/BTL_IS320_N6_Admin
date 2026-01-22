@@ -7,7 +7,11 @@ import { API_URL } from "../config";
 // Brand logos/icons for filter
 const brands = [
   { name: "iPhone", icon: "🍎", value: "iphone" },
-  { name: "Samsung", icon: "📱", value: "samsung" }
+  { name: "Samsung", icon: "📱", value: "samsung" },
+  { name: "Xiaomi", icon: "📱", value: "xiaomi" },
+  { name: "Oppo", icon: "📱", value: "oppo" },
+  { name: "Realme", icon: "📱", value: "realme" },
+  { name: "Vivo", icon: "📱", value: "vivo" },
 ];
 
 // Category filters

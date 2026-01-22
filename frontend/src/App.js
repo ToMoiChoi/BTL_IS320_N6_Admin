@@ -15,6 +15,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminOrders from "./components/admin/AdminOrders";
 import AdminProducts from "./components/admin/AdminProducts";
 import AdminCustomers from "./components/admin/AdminCustomers";
+import AdminCategories from "./components/admin/AdminCategories";
 import ChatBot from "./components/ChatBot";
 import { API_URL } from "./config";
 
@@ -117,6 +118,12 @@ const App = () => {
             <AdminCustomers userInfo={userInfo} onLogout={handleLogout} />
           )}
         />
+        <Route
+          path="/admin/categories"
+          render={() => (
+            <AdminCategories userInfo={userInfo} onLogout={handleLogout} />
+          )}
+        />
         {/* Trang giỏ hàng */}
         <Route
           path="/cart"
@@ -132,7 +139,7 @@ const App = () => {
         {/* Trang sản phẩm theo danh mục */}
         <Route
           path="/category/:categoryId"
-          component={CategoryProducts}
+          render={() => <CategoryProducts isLoggedIn={isLoggedIn} />}
         />
 
         {/* Trang kết quả tìm kiếm */}

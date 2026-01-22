@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { API_URL } from "../config";
+import { API_URL,PROVINCES_API } from "../config";
 
 const Card = ({ product }) => {
   if (!product) return null;
