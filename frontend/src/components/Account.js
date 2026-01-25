@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useHistory } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
-import { API_URL, PROVINCES_API } from "../config";
+import CustomerInfoModal from "./CustomerInfoModal";
+import { API_URL } from "../config";
 
 const Account = ({ isLoggedIn, onLogout }) => {
   const history = useHistory();
@@ -19,14 +20,10 @@ const Account = ({ isLoggedIn, onLogout }) => {
     old_password: "",
     new_password: "",
   });
-    // Provinces API states
-  const [provinces, setProvinces] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [selectedProvince, setSelectedProvince] = useState(null);
-  const [selectedWard, setSelectedWard] = useState(null);
-  const [addressDetail, setAddressDetail] = useState("");
-  const [loadingProvinces, setLoadingProvinces] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
+
+  // Provinces API states
+  const [updating, setUpdating] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const fetchUserMe = async () => {
@@ -68,7 +65,7 @@ const Account = ({ isLoggedIn, onLogout }) => {
     if (onLogout) onLogout();
     history.push("/");
   };
-  
+
   const openUpdateModal = () => {
     setUpdateForm({
       HoTen: userMe.thongtin?.HoTen || "",
@@ -234,8 +231,8 @@ const Account = ({ isLoggedIn, onLogout }) => {
                 </h2>
                 <span
                   className={`px-4 py-1 rounded-full text-xs font-bold uppercase ${isAdmin
-                      ? "bg-purple-100 text-purple-700 border border-purple-200"
-                      : "bg-blue-100 text-blue-700 border border-blue-200"
+                    ? "bg-purple-100 text-purple-700 border border-purple-200"
+                    : "bg-blue-100 text-blue-700 border border-blue-200"
                     }`}
                 >
                   {isAdmin ? "Quản trị viên" : "Khách hàng Member"}
@@ -331,80 +328,15 @@ const Account = ({ isLoggedIn, onLogout }) => {
           </section>
         </div>
       </main>
-      {showUpdateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
-            <button
-              onClick={closeUpdateModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            >
-              ×
-            </button>
-
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Cập nhật hồ sơ
-            </h2>
-
-            <form onSubmit={handleUpdateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tên người dùng
-                </label>
-                <input
-                  type="text"
-                  value={updateForm.HoTen}
-                  onChange={(e) => setUpdateForm({ ...updateForm, HoTen: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Nhập tên của bạn"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Số điện thoại
-                </label>
-                <input
-                  type="tel"
-                  value={updateForm.SoDienThoai}
-                  onChange={(e) => setUpdateForm({ ...updateForm, SoDienThoai: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Nhập số điện thoại"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Địa chỉ nhận hàng
-                </label>
-                <textarea
-                  value={updateForm.DiaChi}
-                  onChange={(e) => setUpdateForm({ ...updateForm, DiaChi: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Nhập địa chỉ"
-                  rows="3"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  type="submit"
-                  disabled={updating}
-                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {updating ? "Đang cập nhật..." : "Lưu thay đổi"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeUpdateModal}
-                  className="flex-1 border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal cập nhật thông tin */}
+      <CustomerInfoModal
+        isOpen={showUpdateModal}
+        onClose={closeUpdateModal}
+        userMe={userMe}
+        onUpdateSuccess={(updatedData) => setUserMe(updatedData)}
+        updating={updating}
+        setUpdating={setUpdating}
+      />
 
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import Footer from "./Footer";
-import { API_URL,PROVINCES_API } from "../config";
+import CustomerInfoModal from "./CustomerInfoModal";
+import { API_URL } from "../config";
 
 
-const Cart = ({ isLoggedIn  }) => {
+const Cart = ({ isLoggedIn }) => {
   const history = useHistory();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,47 +13,10 @@ const Cart = ({ isLoggedIn  }) => {
   const [productSpecs, setProductSpecs] = useState({});
   const [userMe, setUserMe] = useState(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updateForm, setUpdateForm] = useState({
-    HoTen: "",
-    SoDienThoai: "",
-    DiaChi: ""
-  });
-
-  // Provinces API states
-  const [provinces, setProvinces] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [selectedProvince, setSelectedProvince] = useState(null);
-  const [selectedWard, setSelectedWard] = useState(null);
-  const [addressDetail, setAddressDetail] = useState("");
-  const [loadingProvinces, setLoadingProvinces] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
-
-  // Validate Vietnam phone number (10 digits, starts with 0)
-  const validatePhone = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    if (!cleaned) return "Vui lòng nhập số điện thoại";
-    if (cleaned.length !== 10) return "Số điện thoại phải có 10 chữ số";
-    if (!cleaned.startsWith('0')) return "Số điện thoại phải bắt đầu bằng 0";
-    // Check valid prefixes (03x, 05x, 07x, 08x, 09x)
-    const validPrefixes = ['03', '05', '07', '08', '09'];
-    const prefix = cleaned.substring(0, 2);
-    if (!validPrefixes.includes(prefix)) return "Đầu số không hợp lệ";
-    return "";
-  };
-
-  // Format phone number as user types (0xxx xxx xxx)
-  const formatPhone = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length <= 4) return cleaned;
-    if (cleaned.length <= 7) return `${cleaned.slice(0, 4)} ${cleaned.slice(4)}`;
-    return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7, 10)}`;
-  };
-
-  const handlePhoneChange = (e) => {
-    const rawValue = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setUpdateForm({ ...updateForm, SoDienThoai: rawValue });
-    setPhoneError(validatePhone(rawValue));
-  };
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("");
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -63,65 +27,54 @@ const Cart = ({ isLoggedIn  }) => {
     fetchCart();
   }, [isLoggedIn, history]);
 
-  // Fetch provinces on mount
+  // Payment polling - check every 5 seconds when modal is open
   useEffect(() => {
-    fetchProvinces();
-  }, []);
+    let intervalId;
 
-  const fetchProvinces = async () => {
-    setLoadingProvinces(true);
-    try {
-      const response = await fetch(`${PROVINCES_API}?depth=2`);
-      if (response.ok) {
-        const data = await response.json();
-        setProvinces(data);
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách tỉnh/thành:", error);
-    } finally {
-      setLoadingProvinces(false);
+    if (showPaymentModal && currentOrder) {
+      const checkPayment = async () => {
+        const token = localStorage.getItem("token");
+        try {
+          setPaymentStatus("Đang kiểm tra thanh toán...");
+          const response = await fetch(`${API_URL}/payment/check/${currentOrder.MaDH}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.paid) {
+              setPaymentStatus("✅ Đã nhận được thanh toán!");
+              // Auto confirm payment
+              setTimeout(async () => {
+                await clearCart(token);
+                setShowPaymentModal(false);
+                history.push(`/bill/${currentOrder.MaDH}`);
+              }, 1500);
+              clearInterval(intervalId);
+            } else {
+              setPaymentStatus("Chưa nhận được thanh toán - đang chờ...");
+            }
+          }
+        } catch (error) {
+          console.error("Lỗi kiểm tra thanh toán:", error);
+          setPaymentStatus("");
+        }
+      };
+
+      // Check immediately
+      checkPayment();
+      // Then check every 5 seconds
+      intervalId = setInterval(checkPayment, 5000);
     }
-  };
 
-
-  const fetchDistricts = async (districtCode) => {
-    if (!districtCode) {
-      setWards([]);
-      return;
-    }
-    try {
-      const response = await fetch(`${PROVINCES_API}/p/${districtCode}?depth=2`);
-      if (response.ok) {
-        const data = await response.json();
-        setWards(data.wards || []);
-        setSelectedWard(null);
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách phường/xã:", error);
-    }
-  };
-
-  const handleProvinceChange = (e) => {
-    const provinceCode = e.target.value;
-    const province = provinces.find(p => p.code.toString() === provinceCode);
-    setSelectedProvince(province);
-    fetchDistricts(provinceCode);
-  };
-
-  const handleWardChange = (e) => {
-    const wardCode = e.target.value;
-    const ward = wards.find(w => w.code.toString() === wardCode);
-    setSelectedWard(ward);
-  };
-
-  // Combine address parts into full address
-  const buildFullAddress = () => {
-    const parts = [];
-    if (addressDetail.trim()) parts.push(addressDetail.trim());
-    if (selectedWard) parts.push(selectedWard.name);
-    if (selectedProvince) parts.push(selectedProvince.name);
-    return parts.join(", ");
-  };
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [showPaymentModal, currentOrder, history]);
 
   const fetchUserInfo = async () => {
     const token = localStorage.getItem("token");
@@ -277,76 +230,6 @@ const Cart = ({ isLoggedIn  }) => {
     return true;
   };
 
-  const openUpdateModal = () => {
-    setUpdateForm({
-      HoTen: userMe?.thongtin?.HoTen || "",
-      SoDienThoai: userMe?.thongtin?.SoDienThoai || "",
-      DiaChi: userMe?.thongtin?.DiaChi || ""
-    });
-    // Reset province selections
-    setSelectedProvince(null);  
-    setSelectedWard(null);
-    setWards([]);
-    setAddressDetail("");
-    setShowUpdateModal(true);
-  };
-
-  const closeUpdateModal = () => {
-    setShowUpdateModal(false);
-  };
-
-  const handleUpdateSubmit = async (e) => {
-    e.preventDefault();
-
-    // Build full address from selections
-    const fullAddress = buildFullAddress();
-    
-    if (!updateForm.HoTen.trim() || !updateForm.SoDienThoai.trim()) {
-      alert("Vui lòng điền đầy đủ thông tin!");
-      return;
-    }
-
-    if (!fullAddress && !updateForm.DiaChi.trim()) {
-      alert("Vui lòng nhập địa chỉ nhận hàng!");
-      return;
-    }
-
-    const finalAddress = fullAddress || updateForm.DiaChi;
-
-    setUpdating(true);
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch(`${API_URL}/users/me`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          HoTen: updateForm.HoTen,
-          SoDienThoai: updateForm.SoDienThoai,
-          DiaChi: finalAddress
-        }),
-      });
-
-      if (response.ok) {
-        const updatedData = await response.json();
-        setUserMe(updatedData);
-        setShowUpdateModal(false);
-        alert("Cập nhật thông tin thành công!");
-      } else {
-        const error = await response.json();
-        alert(`Lỗi: ${error.detail || "Không thể cập nhật"}`);
-      }
-    } catch (error) {
-      console.error("Lỗi khi cập nhật:", error);
-      alert("Không thể kết nối đến server");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
       alert("Giỏ hàng trống!");
@@ -354,7 +237,14 @@ const Cart = ({ isLoggedIn  }) => {
     }
 
     if (!checkUserInfoComplete()) {
-      openUpdateModal();
+      setShowUpdateModal(true);
+      return;
+    }
+
+    // Validate that all items have valid MaTSKT
+    const invalidItems = cartItems.filter(item => !item.MaTSKT || item.MaTSKT === 0);
+    if (invalidItems.length > 0) {
+      alert("Một số sản phẩm trong giỏ hàng chưa có thông số kỹ thuật hợp lệ. Vui lòng xóa và thêm lại sản phẩm.");
       return;
     }
 
@@ -364,7 +254,7 @@ const Cart = ({ isLoggedIn  }) => {
       items: cartItems.map(item => ({
         MaSP: item.MaSP,
         SoLuong: item.SoLuongSanPham,
-        MaTSKT: item.MaTSKT || 0
+        MaTSKT: item.MaTSKT
       })),
       GiamGia: 0
     };
@@ -381,9 +271,10 @@ const Cart = ({ isLoggedIn  }) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("✅ Order created:", result);
-        await clearCart(token);
-        history.push(`/bill/${result.MaDH}`);
+        console.log("✅ Order created (pending payment):", result);
+        // Don't clear cart yet - wait for payment confirmation
+        setCurrentOrder(result);
+        setShowPaymentModal(true);
       } else {
         const error = await response.json();
         alert(`Lỗi: ${error.detail || "Không thể đặt hàng"}`);
@@ -392,6 +283,43 @@ const Cart = ({ isLoggedIn  }) => {
       console.error("Lỗi khi đặt hàng:", error);
       alert("Không thể kết nối đến server");
     }
+  };
+
+  const handlePaymentConfirm = async () => {
+    const token = localStorage.getItem("token");
+    // Clear cart only after payment confirmation
+    await clearCart(token);
+    setShowPaymentModal(false);
+    if (currentOrder) {
+      history.push(`/bill/${currentOrder.MaDH}`);
+    }
+  };
+
+  const handlePaymentCancel = async () => {
+    const token = localStorage.getItem("token");
+
+    // Cancel the order if user doesn't want to pay
+    if (currentOrder) {
+      try {
+        await fetch(`${API_URL}/orders/${currentOrder.MaDH}/status`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ TrangThaiDH: "cancelled" }),
+        });
+        console.log("❌ Order cancelled:", currentOrder.MaDH);
+      } catch (error) {
+        console.error("Lỗi khi hủy đơn:", error);
+      }
+    }
+
+    setShowPaymentModal(false);
+    setCurrentOrder(null);
+    // Reload cart to restore items (since stock was deducted)
+    fetchCart();
+    alert("Đã hủy đơn hàng.");
   };
 
   const clearCart = async (token) => {
@@ -525,7 +453,7 @@ const Cart = ({ isLoggedIn  }) => {
                       <span>📍</span> Thông tin người nhận
                     </h3>
                     <button
-                      onClick={openUpdateModal}
+                      onClick={() => setShowUpdateModal(true)}
                       className="text-sm text-red-600 hover:text-red-700 font-semibold"
                     >
                       Sửa
@@ -586,8 +514,8 @@ const Cart = ({ isLoggedIn  }) => {
                   onClick={handleCheckout}
                   disabled={!isUserInfoComplete}
                   className={`w-full font-bold py-3 rounded-lg transition shadow-lg ${isUserInfoComplete
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                 >
                   {isUserInfoComplete ? "Tiến hành thanh toán" : "Cập nhật thông tin để thanh toán"}
@@ -605,139 +533,96 @@ const Cart = ({ isLoggedIn  }) => {
         )}
       </main>
 
-      {/* Modal cập nhật thông tin - với Province Selector */}
-      {showUpdateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-200 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+      {/* Modal cập nhật thông tin */}
+      <CustomerInfoModal
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+        userMe={userMe}
+        onUpdateSuccess={(updatedData) => setUserMe(updatedData)}
+        updating={updating}
+        setUpdating={setUpdating}
+      />
+
+      {showPaymentModal && currentOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
             <button
-              onClick={closeUpdateModal}
+              onClick={handlePaymentCancel}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
             >
               ×
             </button>
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Cập nhật thông tin nhận hàng
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Vui lòng cập nhật đầy đủ thông tin để tiếp tục thanh toán
-            </p>
+            <div className="text-center">
+              <div className="text-4xl mb-3">💳</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Thanh toán đơn hàng
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Quét mã QR để thanh toán qua MBBank
+              </p>
 
-            <form onSubmit={handleUpdateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tên người nhận <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={updateForm.HoTen}
-                  onChange={(e) => setUpdateForm({ ...updateForm, HoTen: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Nhập tên của bạn"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Số điện thoại <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={formatPhone(updateForm.SoDienThoai)}
-                  onChange={handlePhoneChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                    phoneError && updateForm.SoDienThoai 
-                      ? 'border-red-500 focus:ring-red-500' 
-                      : 'border-gray-300 focus:ring-red-500'
-                  }`}
-                  placeholder="0xxx xxx xxx"
-                  maxLength={12}
-                  required
-                />
-                {phoneError && updateForm.SoDienThoai && (
-                  <p className="mt-1 text-sm text-red-500">{phoneError}</p>
-                )}
-                {!phoneError && updateForm.SoDienThoai.length === 10 && (
-                  <p className="mt-1 text-sm text-green-600">✓ Số điện thoại hợp lệ</p>
-                )}
-              </div>
-
-              {/* Province/District/Ward Selectors */}
-              <div className="bg-gray-50 p-4 rounded-xl space-y-3">
-                <p className="text-sm font-semibold text-gray-700 mb-2">
-                  📍 Chọn địa chỉ <span className="text-red-500">*</span>
-                </p>
-
-                {/* Province */}
-                <div className="flex space-x-4" >
-                  <select
-                    value={selectedProvince?.code || ""}
-                    onChange={handleProvinceChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                    disabled={loadingProvinces}
-                  >
-                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                    {provinces.map((province) => (
-                      <option key={province.code} value={province.code}>
-                        {province.name}
-                      </option>
-                    ))}
-                  </select>
-
-
-                  {/* Ward */}
-                  <select
-                    value={selectedWard?.code || ""}
-                    onChange={handleWardChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                    disabled={!selectedProvince}
-                  >
-                    <option value="">-- Chọn Phường/Xã --</option>
-                    {wards.map((ward) => (
-                      <option key={ward.code} value={ward.code}>
-                        {ward.name}
-                      </option>
-                    ))}
-                  </select>
+              {/* Order Info */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Mã đơn hàng:</span>
+                  <span className="font-bold text-red-600">#{currentOrder.MaDH}</span>
                 </div>
-                {/* Address detail */}
-                <input
-                  type="text"
-                  value={addressDetail}
-                  onChange={(e) => setAddressDetail(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Số nhà, tên đường..."
-                />
-
-                {/* Preview full address */}
-                {(selectedProvince || addressDetail) && (
-                  <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-1">Địa chỉ đầy đủ:</p>
-                    <p className="text-sm font-medium text-gray-800">
-                      {buildFullAddress() || "Chưa đủ thông tin"}
-                    </p>
-                  </div>
-                )}
+                <div className="flex justify-between text-lg font-bold">
+                  <span className="text-gray-800">Tổng thanh toán:</span>
+                  <span className="text-red-600">
+                    {Number(currentOrder.ThanhTien).toLocaleString("vi-VN")}₫
+                  </span>
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              {/* VietQR Image */}
+              <div className="bg-white border-2 border-gray-200 rounded-xl h-max w-[240px] mx-auto">
+                <img
+                  src={`https://img.vietqr.io/image/MB-0989148966-compact.jpg?amount=${Math.round(currentOrder.ThanhTien)}&addInfo=DHVNP00${currentOrder.MaDH}`}
+                  alt="VietQR Payment"
+                  className="w-full h-max mx-auto rounded-lg"
+                />
+                <div className="text-sm text-gray-600 mb-4">
+                  <p><strong>Ngân hàng:</strong> MBBank</p>
+                  <p><strong>Số tài khoản:</strong> 0989148966</p>
+                </div>
+
+                <p className="text-xs text-gray-500 mt-2">
+                  Nội dung chuyển khoản: <span className="font-bold">DHVNP00{currentOrder.MaDH}</span>
+                </p>
+              </div>
+
+              {/* Payment Status */}
+              {paymentStatus && (
+                <div className={`p-3 rounded-lg mb-4 text-sm font-medium ${paymentStatus.includes("✅")
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                  {paymentStatus}
+                </div>
+              )}
+
+              {/* Bank Info */}
+              <div className="flex gap-3">
                 <button
-                  type="submit"
-                  disabled={updating}
-                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {updating ? "Đang cập nhật..." : "Lưu thay đổi"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeUpdateModal}
+                  onClick={handlePaymentCancel}
                   className="flex-1 border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition"
                 >
-                  Hủy
+                  Hủy đơn hàng
+                </button>
+                <button
+                  onClick={handlePaymentConfirm}
+                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition shadow-lg"
+                >
+                  Đã thanh toán
                 </button>
               </div>
-            </form>
+
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                🔄 Hệ thống tự động kiểm tra thanh toán mỗi 5 giây
+              </p>
+            </div>
           </div>
         </div>
       )}

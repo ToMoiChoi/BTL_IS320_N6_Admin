@@ -2,7 +2,7 @@ import os
 import time
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..database import get_db
 from ..schemas import schemas
 from ..models import models
@@ -38,9 +38,31 @@ def create_products(
         db.refresh(p)
     return new_products
 
-@router.get("/", response_model=List[schemas.ProductOut]) 
-def list_products(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
-    return db.query(models.SanPham).offset(skip).limit(limit).all()
+# Route list_products đã được hợp nhất vào get_products bên dưới
+
+@router.get("/", response_model=List[schemas.ProductOut])
+def get_products(
+    ma_dm: Optional[int] = None, 
+    ten_sp: Optional[str] = "", # Thêm tham số tìm kiếm tên
+    db: Session = Depends(get_db),
+    limit: int = 1000, 
+    skip: int = 0
+):
+    # 1. Khởi tạo query cơ bản
+    query = db.query(models.SanPham)
+    
+    # 2. Lọc theo mã danh mục (nếu có)
+    if ma_dm is not None:
+        query = query.filter(models.SanPham.MaDM == ma_dm)
+    
+    # 3. Lọc theo tên sản phẩm (Tìm kiếm tương đối - ILIKE)
+    if ten_sp:
+        query = query.filter(models.SanPham.TenSP.ilike(f"%{ten_sp}%"))
+    
+    # 4. Thực thi truy vấn với phân trang
+    products = query.offset(skip).limit(limit).all()
+    
+    return products
 
 @router.get("/{product_id}", response_model=schemas.ProductOut)
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -96,31 +118,7 @@ def update_spec(product_id: int, tskt_id: int, payload: schemas.ThongSoKyThuatCr
 # 2. QUẢN LÝ BIẾN THỂ / THÔNG SỐ (SPECS)
 # ============================================================
 
-@router.post("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
-def add_product_specs(
-    product_id: int, 
-    specs: List[schemas.ThongSoKyThuatCreate], 
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user)
-):
-    p = db.query(models.SanPham).filter(models.SanPham.MaSP == product_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    new_specs = []
-    for item in specs:
-        # Sử dụng **item.dict() để mapping RAM, BoNho, Pin, GiaBan... từ schema vào model
-        new_spec = models.ThongSoKyThuat(
-            MaSP=product_id,
-            **item.dict() 
-        )
-        db.add(new_spec)
-        new_specs.append(new_spec)
-
-    db.commit()
-    for s in new_specs:
-        db.refresh(s)
-    return new_specs
+# Function add_product_specs được định nghĩa bên dưới (sau get_product_specs)
 
 @router.get("/{product_id}/thong_so", response_model=List[schemas.ThongSoKyThuatOut])
 def get_product_specs(product_id: int, db: Session = Depends(get_db)):

@@ -41,7 +41,7 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
             searchText.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
           )
         );
-        
+
         // Lấy thông số và media cho mỗi sản phẩm, chỉ giữ sản phẩm có giá
         const productsWithPrice = await Promise.all(
           filtered.slice(0, 10).map(async (p) => {
@@ -53,11 +53,11 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
               ]);
               const specData = await resSpec.json();
               const mediaData = await resMedia.json();
-              
+
               // Lấy biến thể đầu tiên có giá > 0
               const specs = Array.isArray(specData) ? specData : [];
               const spec = specs.find(s => s && s.GiaBan && s.GiaBan !== "0.00" && Number(s.GiaBan) > 0) || specs[0];
-              
+
               return {
                 ...p,
                 GiaBan: spec?.GiaBan,
@@ -70,12 +70,12 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
             }
           })
         );
-        
+
         // Chỉ hiển thị sản phẩm có giá hợp lệ
         const validProducts = productsWithPrice.filter(
           p => p.GiaBan && p.GiaBan !== "0.00" && Number(p.GiaBan) > 0
         );
-        
+
         setSearchResults(validProducts.slice(0, 6)); // Hiện tối đa 6 gợi ý
         setShowSuggestions(true);
       } catch {
@@ -145,7 +145,7 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
                     categories.map((cat) => (
                       <Link
                         key={cat.MaDM}
-                        to={`/category/${cat.MaDM}`}
+                        to={`/category=${cat.Loai}`}
                         className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-50 rounded-lg transition"
                         onClick={() => setShowDropdown(false)}
                       >
@@ -227,9 +227,7 @@ const Header = ({ isLoggedIn, userInfo, onLogout, cartCount = 0 }) => {
                 )}
               </div>
               <span className="hidden lg:block text-xs font-bold leading-tight">
-                Giỏ
-                <br />
-                hàng
+                Giỏ hàng
               </span>
             </button>
 

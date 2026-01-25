@@ -5,7 +5,7 @@ import { useParams, useHistory } from "react-router-dom";
 import { API_URL } from "../config";
 
 const CategoryProducts = ({ isLoggedIn }) => {
-  const { categoryId } = useParams();
+  const { Loai } = useParams();
   const history = useHistory();
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState(null);
@@ -16,18 +16,18 @@ const CategoryProducts = ({ isLoggedIn }) => {
     const fetchCategoryProducts = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        // Sử dụng API endpoint mới
-        const res = await fetch(`${API_URL}/categories/${categoryId}/products`);
-        
+        // Sử dụng API endpoint với Loai (loại danh mục)
+        const res = await fetch(`${API_URL}/categories/by-type/${Loai}/products`);
+
         if (!res.ok) {
           throw new Error("Không tìm thấy danh mục");
         }
-        
+
         const data = await res.json();
         setCategory(data.category);
-        
+
         // Fetch specs và media cho mỗi sản phẩm
         const productsWithDetails = await Promise.all(
           data.products.map(async (p) => {
@@ -36,13 +36,13 @@ const CategoryProducts = ({ isLoggedIn }) => {
                 fetch(`${API_URL}/products/${p.MaSP}/thong_so`),
                 fetch(`${API_URL}/products/${p.MaSP}/media`)
               ]);
-              
+
               const specsData = await specsRes.json();
               const mediaData = await mediaRes.json();
-              
+
               const specs = Array.isArray(specsData) ? specsData : [];
               const validSpec = specs.find(s => s && s.GiaBan && Number(s.GiaBan) > 0) || specs[0];
-              
+
               return {
                 ...p,
                 GiaBan: validSpec?.GiaBan,
@@ -55,12 +55,12 @@ const CategoryProducts = ({ isLoggedIn }) => {
             }
           })
         );
-        
+
         // Chỉ hiển thị sản phẩm có giá
         const validProducts = productsWithDetails.filter(
           p => p.GiaBan && Number(p.GiaBan) > 0
         );
-        
+
         setProducts(validProducts);
       } catch (err) {
         console.error("Error:", err);
@@ -69,9 +69,9 @@ const CategoryProducts = ({ isLoggedIn }) => {
         setLoading(false);
       }
     };
-    
+
     fetchCategoryProducts();
-  }, [categoryId]);
+  }, [Loai]);
 
   if (loading) {
     return (
@@ -89,7 +89,7 @@ const CategoryProducts = ({ isLoggedIn }) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-xl mb-4">❌ {error}</p>
-          <button 
+          <button
             onClick={() => history.push("/")}
             className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
           >
@@ -111,7 +111,7 @@ const CategoryProducts = ({ isLoggedIn }) => {
               <span className="mx-2">/</span>
               <span className="text-gray-800 font-medium">{category?.TenDM || "Danh mục"}</span>
             </nav>
-            
+
             <div className="flex items-center gap-4">
               <span className="text-4xl">{category?.Icon || "📱"}</span>
               <div>
@@ -119,7 +119,7 @@ const CategoryProducts = ({ isLoggedIn }) => {
                 <p className="text-gray-500">{category?.SoLuongSP || products.length} sản phẩm</p>
               </div>
             </div>
-            
+
             {category?.MoTa && (
               <p className="mt-4 text-gray-600">{category.MoTa}</p>
             )}

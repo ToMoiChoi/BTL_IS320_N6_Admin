@@ -82,7 +82,7 @@ const App = () => {
   return (
     <Router>
       {/* Hide Header on admin routes */}
-      <Route render={({ location }) => 
+      <Route render={({ location }) =>
         !location.pathname.startsWith('/admin') && (
           <Header
             isLoggedIn={isLoggedIn}
@@ -138,7 +138,7 @@ const App = () => {
 
         {/* Trang sản phẩm theo danh mục */}
         <Route
-          path="/category/:categoryId"
+          path="/category=:Loai"
           render={() => <CategoryProducts isLoggedIn={isLoggedIn} />}
         />
 
@@ -182,6 +182,19 @@ const App = () => {
         <Route
           exact
           path="/"
+          render={() => (
+            <Home
+              products={products}
+              isLoggedIn={isLoggedIn}
+              userInfo={userInfo}
+              onLogout={handleLogout}
+            />
+          )}
+        />
+
+        {/* Trang sản phẩm theo thương hiệu */}
+        <Route
+          path="/brand=:brandValue"
           render={() => (
             <Home
               products={products}

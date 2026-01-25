@@ -113,6 +113,42 @@ def get_category_products(
     }
 
 
+@router.get("/by-type/{loai}/products")
+def get_category_products_by_type(
+    loai: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách sản phẩm theo loại danh mục (phone, tablet, etc)."""
+    category = db.query(models.DanhMuc).filter(models.DanhMuc.Loai == loai).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Danh mục không tồn tại")
+    
+    products = db.query(models.SanPham).filter(
+        models.SanPham.MaDM == category.MaDM
+    ).offset(skip).limit(limit).all()
+    
+    total = db.query(func.count(models.SanPham.MaSP)).filter(
+        models.SanPham.MaDM == category.MaDM
+    ).scalar()
+    
+    return {
+        "category": schemas.CategoryOut(
+            MaDM=category.MaDM,
+            TenDM=category.TenDM,
+            Loai=category.Loai,
+            MoTa=category.MoTa,
+            Icon=category.Icon,
+            TrangThai=category.TrangThai,
+            SoLuongSP=total
+        ),
+        "products": products,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
 # ============================================================
 # ADMIN ENDPOINTS (Requires authentication)
 # ============================================================

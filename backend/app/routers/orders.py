@@ -67,11 +67,11 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), us
             TongTien=tong_tien,
             GiamGia=giam_gia,
             ThanhTien=thanh_tien,
-            MaTrangThai=1 # 1 = PENDING (from seed_3nf.py)
+            MaTrangThai=1  # 1 = pending
         )
         db.add(new_order)
         db.flush() 
-
+ 
         # 4. Lưu Chi tiết đơn hàng
         for it in items_to_create:
             detail_item = models.ChiTietDonHang(
@@ -100,7 +100,7 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db), us
 # ============================================================
 @router.get("/", response_model=List[schemas.OrderOut])
 def list_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    # Eager load chitiets AND trangthai
+    # Eager load chitiets and trangthai
     query = db.query(models.DonHang).options(
         joinedload(models.DonHang.chitiets),
         joinedload(models.DonHang.trangthai)
@@ -158,21 +158,19 @@ def update_order_status(
         "shipping": 3,
         "completed": 4,
         "cancelled": 5,
-        "refunded": 5 # Treat refunded same as cancelled for now or add to seed
+        "refunded": 6
     }
 
-    old_ma_tt = order.MaTrangThai  # Use integer ID, not Vietnamese name
-    old_status_name = order.trangthai.TenTrangThai if order.trangthai else "Không xác định"
-    new_status_str = payload.TrangThaiDH
+    old_status = order.trangthai.TenTrangThai if order.trangthai else "pending"
+    new_status = payload.TrangThaiDH
     
-    if new_status_str not in status_map:
-         raise HTTPException(status_code=400, detail=f"Trạng thái '{new_status_str}' không hợp lệ")
+    if new_status not in status_map:
+         raise HTTPException(status_code=400, detail=f"Trạng thái '{new_status}' không hợp lệ")
 
-    new_ma_tt = status_map[new_status_str]
+    new_status_id = status_map[new_status]
 
-    # LOGIC HOÀN KHO: Nếu chuyển từ trạng thái khác sang CANCELLED (ID=5)
-    CANCELLED_ID = 5
-    if new_ma_tt == CANCELLED_ID and old_ma_tt != CANCELLED_ID:
+    # LOGIC HOÀN KHO: Nếu chuyển từ trạng thái khác sang CANCELLED
+    if new_status == "cancelled" and old_status != "cancelled":
         for detail in order.chitiets:
             if detail.MaTSKT:
                 spec = db.query(models.ThongSoKyThuat).filter(models.ThongSoKyThuat.MaTSKT == detail.MaTSKT).first()
@@ -180,10 +178,8 @@ def update_order_status(
                     spec.SoLuong += detail.SoLuong # Cộng lại số lượng vào kho
                     print(f"✅ Hoàn kho: +{detail.SoLuong} cho MaTSKT={detail.MaTSKT}")
 
-    order.MaTrangThai = new_ma_tt
+    order.MaTrangThai = new_status_id
     db.commit()
-    
-    # Reload relationship to return correct string
     db.refresh(order)
     
-    return {"message": f"Trạng thái đơn hàng chuyển từ {old_status_name} sang {new_status_str}"}
+    return {"message": f"Trạng thái đơn hàng chuyển từ {old_status} sang {new_status}"}

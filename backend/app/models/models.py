@@ -111,6 +111,14 @@ class ChiTietGioHang(Base):
     sanpham = relationship("SanPham")  # Thêm dòng này
     tskt = relationship("ThongSoKyThuat")  # Thêm dòng này
 
+# TrangThaiDonHang (Lookup table)
+class TrangThaiDonHang(Base):
+    __tablename__ = "trangthai_donhang"
+    MaTT = Column(Integer, primary_key=True)
+    TenTrangThai = Column(String(50), nullable=False, unique=True)
+    MoTa = Column(Text)
+    ThuTu = Column(Integer, default=0)
+
 # DonHang + ChiTietDonHang
 class DonHang(Base):
     __tablename__ = "donhang"
@@ -120,10 +128,16 @@ class DonHang(Base):
     GiamGia = Column(Numeric(12,2), default=0)
     ThanhTien = Column(Numeric(14,2), nullable=False)
     TongTien = Column(Numeric(14,2), nullable=False)
-    TrangThaiDH = Column(String(50), default="pending")
+    MaTrangThai = Column(Integer, ForeignKey("trangthai_donhang.MaTT"), default=1)
 
     taikhoan = relationship("TaiKhoan", back_populates="donhangs")
     chitiets = relationship("ChiTietDonHang", back_populates="donhang", cascade="all, delete-orphan")
+    trangthai = relationship("TrangThaiDonHang")
+    
+    @property
+    def TrangThaiDH(self):
+        """Property to get status string for API response"""
+        return self.trangthai.TenTrangThai if self.trangthai else "pending"
 
 class ChiTietDonHang(Base):
     __tablename__ = "chitietdonhang"
