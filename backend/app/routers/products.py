@@ -28,7 +28,16 @@ def create_products(
         p = models.SanPham(
             TenSP=item.TenSP,
             MoTa=item.MoTa,
-            MaDM=item.MaDM
+            MaDM=item.MaDM,
+            # Shared Specs
+            KichThuoc=item.KichThuoc,
+            Camera=item.Camera,
+            PhienBan=item.PhienBan,
+            Chitset=item.Chitset,
+            Pin=item.Pin,
+            TheSim=item.TheSim,
+            HeDieuHanh=item.HeDieuHanh,
+            RAM=item.RAM # Shared Spec
         )
         db.add(p)
         new_products.append(p)
@@ -93,6 +102,16 @@ def update_product(product_id: int, payload: schemas.ProductCreate, db: Session 
         p.MoTa = payload.MoTa
     if payload.MaDM is not None:
         p.MaDM = payload.MaDM
+        
+    # Update Shared Specs
+    if payload.KichThuoc is not None: p.KichThuoc = payload.KichThuoc
+    if payload.Camera is not None: p.Camera = payload.Camera
+    if payload.PhienBan is not None: p.PhienBan = payload.PhienBan
+    if payload.Chitset is not None: p.Chitset = payload.Chitset
+    if payload.Pin is not None: p.Pin = payload.Pin
+    if payload.TheSim is not None: p.TheSim = payload.TheSim
+    if payload.HeDieuHanh is not None: p.HeDieuHanh = payload.HeDieuHanh
+    if payload.RAM is not None: p.RAM = payload.RAM # Update Shared Spec
     
     db.commit()
     db.refresh(p)

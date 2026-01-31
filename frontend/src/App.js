@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { HashRouter as Router, Route, Switch } from "react-router-dom";
-import Register from "./components/Register";
-import Home from "./components/Home";
-import Login from "./components/login";
-import ProductDetail from "./components/ProductDetail";
-import Account from "./components/Account";
-import Header from "./components/Header";
-import CategoryProducts from "./components/CategoryProducts";
-import SearchResults from "./components/SearchResults";
-import Cart from "./components/Cart";
-import Order from "./components/Order";
-import Bill from "./components/Bill";
+import Register from "./components/auth/Register";
+import Home from "./components/pages/Home";
+import Login from "./components/auth/Login";
+import ProductDetail from "./components/products/ProductDetail";
+import Account from "./components/auth/Account";
+import Header from "./components/layout/Header";
+import CategoryProducts from "./components/products/CategoryProducts";
+import SearchResults from "./components/products/SearchResults";
+import Cart from "./components/cart/Cart";
+import Order from "./components/cart/Order";
+import Bill from "./components/cart/Bill";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminOrders from "./components/admin/AdminOrders";
 import AdminProducts from "./components/admin/AdminProducts";
 import AdminCustomers from "./components/admin/AdminCustomers";
 import AdminCategories from "./components/admin/AdminCategories";
-import ChatBot from "./components/ChatBot";
+import ChatBot from "./components/features/ChatBot";
 import { API_URL } from "./config";
 
 const App = () => {

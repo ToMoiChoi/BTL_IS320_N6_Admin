@@ -26,6 +26,16 @@ class SanPham(Base):
     NgayTao = Column(DateTime(timezone=True), server_default=func.now())
     MoTa = Column(Text)
     MaDM = Column(Integer, ForeignKey("danhmuc.MaDM", ondelete="SET NULL"), nullable=True)
+
+    # Thông số kỹ thuật chung (Shared Specs)
+    KichThuoc = Column(String(100))
+    Camera = Column(String(255))
+    PhienBan = Column(String(100))
+    Chitset = Column(String(100))
+    Pin = Column(String(100))
+    TheSim = Column(String(100))
+    HeDieuHanh = Column(String(100))
+    RAM = Column(String(50)) # RAM is now shared
     
     danhmuc = relationship("DanhMuc", back_populates="sanphams")
     media = relationship("HinhAnhVideo", back_populates="sanpham", cascade="all, delete-orphan")
@@ -37,15 +47,8 @@ class ThongSoKyThuat(Base):
     MaTSKT = Column(Integer, primary_key=True, index=True)
     MaSP = Column(Integer, ForeignKey("sanpham.MaSP"))
     
-    KichThuoc = Column(String(100))
-    Camera = Column(String(255))
-    PhienBan = Column(String(100))
-    Chitset = Column(String(100))
-    RAM = Column(String(50))
+    # Biến thể (Variants) - RAM removed
     BoNho = Column(String(50))
-    Pin = Column(String(100))
-    TheSim = Column(String(100))
-    HeDieuHanh = Column(String(100))
     MauSac = Column(String(50))
     
     GiaBan = Column(Numeric(12, 2)) # Giá riêng cho phiên bản này

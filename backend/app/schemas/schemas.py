@@ -88,16 +88,10 @@ class UserUpdate(BaseModel):
         from_attributes = True
     
 # --- THONG SO KY THUAT (SPECS / VARIANTS) ---
+# --- THONG SO KY THUAT (SPECS / VARIANTS) ---
 class ThongSoKyThuatBase(BaseModel):
-    KichThuoc: Optional[str] = None
-    Camera: Optional[str] = None
-    PhienBan: Optional[str] = None
-    Chitset: Optional[str] = None
-    RAM: Optional[str] = None
+    # Chỉ chứa các thông số thay đổi theo phiên bản
     BoNho: Optional[str] = None 
-    Pin: Optional[str] = None
-    TheSim: Optional[str] = None
-    HeDieuHanh: Optional[str] = None
     MauSac: Optional[str] = None
     GiaBan: Optional[condecimal(max_digits=12, decimal_places=2)] = None
     SoLuong: int = 0
@@ -116,6 +110,16 @@ class ProductBase(BaseModel):
     TenSP: str
     MoTa: Optional[str] = None
     MaDM: Optional[int] = None
+    
+    # Thông số chung
+    KichThuoc: Optional[str] = None
+    Camera: Optional[str] = None
+    PhienBan: Optional[str] = None
+    Chitset: Optional[str] = None
+    Pin: Optional[str] = None
+    TheSim: Optional[str] = None
+    HeDieuHanh: Optional[str] = None
+    RAM: Optional[str] = None # Added RAM here
 
 class ProductCreate(ProductBase):
     pass
